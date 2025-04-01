@@ -202,42 +202,49 @@
 
       // 批次上傳
       document.getElementById('submitAllBtn').addEventListener('click', async function() {
-          if (workers.length === 0) {
-              alert('請先新增工人');
-              return;
-          }
+    if (workers.length === 0) {
+        alert('請先新增工人');
+        return;
+    }
 
-          try {
-              const response = await fetch(APPS_SCRIPT_URL, {
-                  method: 'POST',
-                  mode: 'cors', // 重要：啟用跨域資源共享
-                  headers: {
-                      'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify(workers)
-              });
+    const submitButton = document.getElementById('submitAllBtn');
+    submitButton.disabled = true; // 禁用按鈕，防止重複點擊
+    submitButton.innerHTML = '<i class="bi bi-cloud-upload"></i> 上傳中…'; // 更改按鈕文字
 
-              // 檢查回應狀態
-              if (!response.ok) {
-                  throw new Error(`HTTP error! status: ${response.status}`);
-              }
+    try {
+        const response = await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(workers)
+        });
 
-              const result = await response.json();
-              
-              console.log('伺服器回傳:', result);
-              
-              if (result.status === 'success') {
-                  alert(result.message || '批次上傳成功');
-                  workers = []; // 清空陣列
-                  updateWorkerTable();
-              } else {
-                  alert('上傳失敗：' + (result.message || '未知錯誤'));
-              }
-          } catch (error) {
-              console.error('上傳發生錯誤:', error);
-              alert('上傳發生錯誤：' + error.message);
-          }
-      });
+        if (!response.ok) {
+            throw new Error(`伺服器錯誤，狀態碼：${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('伺服器回應:', result);
+
+        if (result.status === 'success') {
+            alert('批次上傳成功');
+            workers = []; // 清空陣列
+            updateWorkerTable();
+        } else {
+            alert('上傳失敗：' + (result.message || '未知錯誤'));
+        }
+    } catch (error) {
+        console.error('上傳發生錯誤:', error);
+        alert('上傳發生錯誤：' + error.message);
+    } finally {
+        // 3 秒後重新啟用按鈕
+        setTimeout(() => {
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="bi bi-cloud-upload"></i> 批次上傳';
+        }, 3000);
+    }
+});
 
       // 清空列表
       document.getElementById('clearAllBtn').addEventListener('click', function() {
