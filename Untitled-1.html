@@ -1,70 +1,251 @@
-function doPost(e) {
-  try {
-    // 安全的資料解析
-    var jsonString = e.postData.contents || '[]';
-    var data = JSON.parse(jsonString);
-    
-    console.log('收到的資料：', data);
-    
-    // 錯誤檢查
-    if (!Array.isArray(data)) {
-      return ContentService.createTextOutput(
-        JSON.stringify({
-          status: 'error', 
-          message: '資料格式錯誤，需要陣列'
-        })
-      ).setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    
-    // 動態寫入標題列
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow([
-        '姓名', 
-        '工種', 
-        '所屬廠商', 
-        '進場時間', 
-        '紀錄時間'
-      ]);
-    }
-    
-    // 逐筆寫入資料
-    data.forEach(function(worker) {
-      sheet.appendRow([
-        worker.name || '未知', 
-        worker.type || '未知', 
-        worker.company || '未知', 
-        worker.entryTime || new Date().toLocaleString(), 
-        new Date().toLocaleString()
-      ]);
-    });
-    
-    // 回傳成功訊息
-    return ContentService.createTextOutput(
-      JSON.stringify({
-        status: 'success', 
-        message: '成功新增 ' + data.length + ' 筆資料'
-      })
-    ).setMimeType(ContentService.MimeType.JSON);
-    
-  } catch (error) {
-    // 詳細的錯誤回傳
-    return ContentService.createTextOutput(
-      JSON.stringify({
-        status: 'error', 
-        message: '處理資料時發生錯誤：' + error.toString()
-      })
-    ).setMimeType(ContentService.MimeType.JSON);
-  }
-}
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>營造業人員進場登記</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+      .table-hover tbody tr:hover {
+          background-color: #f5f5f5;
+          cursor: pointer;
+      }
+      #currentTime {
+          font-size: 0.9rem;
+          color: #6c757d;
+      }
+  </style>
+</head>
+<body>
+  <div class="container mt-5">
+      <div class="text-center mb-4">
+          <h2>
+              <i class="bi bi-building-fill"></i> 工地人員進場登記
+          </h2>
+          <div id="currentTime" class="text-muted"></div>
+      </div>
+      
+      <div class="card mb-4">
+          <div class="card-header">
+              <h5 class="card-title">
+                  <i class="bi bi-plus-circle"></i> 新增人員
+              </h5>
+          </div>
+          <div class="card-body">
+              <form id="workerForm">
+                  <div class="row">
+                      <div class="col-md-3 mb-2">
+                          <input type="text" class="form-control" id="workerName" placeholder="姓名" required>
+                      </div>
+                      <div class="col-md-3 mb-2">
+                          <select class="form-select" id="workerType" required>
+                              <option value="">工種</option>
+                              <option value="鋼筋工">鋼筋工</option>
+                              <option value="模板工">模板工</option>
+                              <option value="水電工">水電工</option>
+                              <option value="泥作工">泥作工</option>
+                              <option value="焊接工">焊接工</option>
+                              <option value="其他">其他</option>
+                          </select>
+                      </div>
+                      <div class="col-md-3 mb-2">
+                          <input type="text" class="form-control" id="workerCompany" placeholder="所屬廠商" required>
+                      </div>
+                      <div class="col-md-3 mb-2">
+                          <button type="submit" class="btn btn-primary w-100">
+                              <i class="bi bi-plus"></i> 新增
+                          </button>
+                      </div>
+                  </div>
+              </form>
+          </div>
+      </div>
 
-// 增加 doGet 方法，方便測試
-function doGet(e) {
-  return ContentService.createTextOutput(
-    JSON.stringify({
-      status: 'ok',
-      message: 'Apps Script 服務正常運作'
-    })
-  ).setMimeType(ContentService.MimeType.JSON);
-}
+      <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="card-title mb-0">
+                  <i class="bi bi-list-ul"></i> 今日進場人員
+              </h5>
+              <div>
+                  <span class="badge bg-primary" id="workerCount">0 人</span>
+              </div>
+          </div>
+          <div class="card-body">
+              <div class="table-responsive">
+                  <table class="table table-striped table-hover" id="workerTable">
+                      <thead>
+                          <tr>
+                              <th>姓名</th>
+                              <th>工種</th>
+                              <th>所屬廠商</th>
+                              <th>進場時間</th>
+                              <th>操作</th>
+                          </tr>
+                      </thead>
+                      <tbody id="workerTableBody">
+                          <!-- 動態填入 -->
+                      </tbody>
+                  </table>
+              </div>
+          </div>
+          <div class="card-footer">
+              <div class="row">
+                  <div class="col">
+                      <button id="submitAllBtn" class="btn btn-success w-100">
+                          <i class="bi bi-cloud-upload"></i> 批次上傳
+                      </button>
+                  </div>
+                  <div class="col">
+                      <button id="clearAllBtn" class="btn btn-danger w-100">
+                          <i class="bi bi-trash"></i> 清空列表
+                      </button>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <script>
+      // Google Apps Script 部署網址
+      const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyV_dXFQBC2Gcklh8T8xPMbfethaXWJvBrv8-7U-jloohEY7GZ2F5Y7YybnX3pCQs8Q/exec';
+
+      // 工人資料陣列
+      let workers = [];
+
+      // 更新當前時間
+      function updateCurrentTime() {
+          const now = new Date();
+          const timeString = now.toLocaleString('zh-TW', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false
+          });
+          document.getElementById('currentTime').textContent = `目前時間：${timeString}`;
+      }
+
+      // 每秒更新時間
+      setInterval(updateCurrentTime, 1000);
+      updateCurrentTime();
+
+      // 表單提交事件
+      document.getElementById('workerForm').addEventListener('submit', function(e) {
+          e.preventDefault();
+          
+          const name = document.getElementById('workerName').value;
+          const type = document.getElementById('workerType').value;
+          const company = document.getElementById('workerCompany').value;
+          
+          // 建立工人物件
+          const worker = {
+              name: name,
+              type: type,
+              company: company,
+              entryTime: new Date().toLocaleString('zh-TW', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                  hour12: false
+              })
+          };
+
+          // 加入陣列
+          workers.push(worker);
+          
+          // 更新表格
+          updateWorkerTable();
+          
+          // 清空輸入
+          document.getElementById('workerName').value = '';
+          document.getElementById('workerType').value = '';
+          document.getElementById('workerCompany').value = '';
+      });
+
+      // 更新工人表格
+      function updateWorkerTable() {
+          const tableBody = document.getElementById('workerTableBody');
+          const workerCountBadge = document.getElementById('workerCount');
+          tableBody.innerHTML = '';
+
+          workers.forEach((worker, index) => {
+              const row = `
+                  <tr>
+                      <td>${worker.name}</td>
+                      <td>${worker.type}</td>
+                      <td>${worker.company}</td>
+                      <td>${worker.entryTime}</td>
+                      <td>
+                          <button class="btn btn-sm btn-danger" onclick="removeWorker(${index})">
+                              <i class="bi bi-trash"></i>
+                          </button>
+                      </td>
+                  </tr>
+              `;
+              tableBody.innerHTML += row;
+          });
+
+          // 更新人數
+          workerCountBadge.textContent = `${workers.length} 人`;
+      }
+
+      // 移除工人
+      function removeWorker(index) {
+          workers.splice(index, 1);
+          updateWorkerTable();
+      }
+
+      // 批次上傳
+      document.getElementById('submitAllBtn').addEventListener('click', async function() {
+          if (workers.length === 0) {
+              alert('請先新增工人');
+              return;
+          }
+
+          try {
+              const response = await fetch(APPS_SCRIPT_URL, {
+                  method: 'POST',
+                  mode: 'cors', // 重要：啟用跨域資源共享
+                  headers: {
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(workers)
+              });
+
+              // 檢查回應狀態
+              if (!response.ok) {
+                  throw new Error(`HTTP error! status: ${response.status}`);
+              }
+
+              const result = await response.json();
+              
+              console.log('伺服器回傳:', result);
+              
+              if (result.status === 'success') {
+                  alert(result.message || '批次上傳成功');
+                  workers = []; // 清空陣列
+                  updateWorkerTable();
+              } else {
+                  alert('上傳失敗：' + (result.message || '未知錯誤'));
+              }
+          } catch (error) {
+              console.error('上傳發生錯誤:', error);
+              alert('上傳發生錯誤：' + error.message);
+          }
+      });
+
+      // 清空列表
+      document.getElementById('clearAllBtn').addEventListener('click', function() {
+          if (confirm('確定要清空所有人員嗎？')) {
+              workers = [];
+              updateWorkerTable();
+          }
+      });
+  </script>
+</body>
+</html>
