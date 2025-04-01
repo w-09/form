@@ -106,8 +106,11 @@
   </div>
 
   <script>
+      // Google Excel 試算表 ID
+      const SPREADSHEET_ID = '1T-CX30M_FL9w0vpnOIczJ-qNW8boUTnpLp508H_Sn68';
+      
       // Google Apps Script 部署網址
-      const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbymfwu4UmX6smZVXvw8CAEIymq8n_KIafwuzx6C5f0a44PyXfFDtJsGIVCrSwH7XRxV/exec';
+      const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxu8hb9uHJGQwJz-VW7-bRHha7KF5DEGzannHxBk4fmBp7FvSK_5OfznD8tlsl351ZF/exec';
 
       // 工人資料陣列
       let workers = [];
@@ -214,7 +217,10 @@
                   headers: {
                       'Content-Type': 'application/json'
                   },
-                  body: JSON.stringify(workers)
+                  body: JSON.stringify({
+                      spreadsheetId: SPREADSHEET_ID,
+                      workers: workers
+                  })
               });
 
               // 檢查回應狀態
