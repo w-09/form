@@ -378,18 +378,23 @@
           `;
           uploadResultModal.show();
           
-          // 確保所有欄位都有正確的類型
+          // 確保所有欄位都有正確的類型和值
           const processedWorkers = workers.map(worker => ({
-              type: worker.type,
+              type: worker.type || '未指定',
               count: parseInt(worker.count) || 1,
-              location: worker.location || '',
-              content: worker.content || '',
-              entryTime: worker.entryTime
+              location: worker.location || '未指定',
+              content: worker.content || '未指定',
+              entryTime: worker.entryTime || new Date().toLocaleString('zh-TW', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false
+              })
           }));
           
-          // 準備要上傳的資料
+          console.log("準備上傳資料:", JSON.stringify(processedWorkers));
+          
+          // 直接使用 JSON 字串
           const dataToUpload = JSON.stringify(processedWorkers);
-          console.log("準備上傳資料:", dataToUpload);
           
           // 嘗試使用 fetch API 進行上傳
           tryFetchUpload(dataToUpload);
@@ -404,7 +409,7 @@
               headers: {
                   'Content-Type': 'application/json',
               },
-              body: JSON.stringify({ data: dataToUpload })
+              body: dataToUpload // 直接發送資料，不再包裝
           })
           .then(response => {
               console.log("收到 fetch 回應:", response);
@@ -458,7 +463,7 @@
               tryFormSubmitUpload(dataToUpload);
           };
           
-          xhr.send(JSON.stringify({ data: dataToUpload }));
+          xhr.send(dataToUpload); // 直接發送資料，不再包裝
       }
 
       // 使用表單提交方式嘗試上傳 (最後的備用方案)
