@@ -427,8 +427,14 @@
             document.getElementById('currentDateTime').textContent = now.toLocaleString('zh-TW', options);
         }
         
-        // 上傳到 Google 試算表 - 使用多種方法嘗試上傳
-        function uploadToGoogleSheet() {
+        // 上傳到 Google 試算表
+        async function uploadToGoogleSheet() {
+            // 檢查是否有資料可上傳
+            if (!workers || workers.length === 0) {
+                alert('沒有資料可上傳');
+                return;
+            }
+
             // 顯示上傳中訊息
             const uploadResultModal = new bootstrap.Modal(document.getElementById('uploadResultModal'));
             const uploadResultBody = document.getElementById('uploadResultBody');
@@ -444,138 +450,41 @@
             uploadResultModal.show();
             
             // 準備要上傳的資料
-            const dataToUpload = JSON.stringify(workers);
-            console.log("準備上傳資料:", dataToUpload);
+            const dataToUpload = {
+                action: 'addWorkers',
+                workers: workers
+            };
             
-            // 嘗試使用 fetch API 進行上傳 (現代瀏覽器支援)
-            tryFetchUpload(dataToUpload);
-        }
-        
-        // 使用 fetch API 上傳
-        function tryFetchUpload(data) {
-            // Google Apps Script 部署網址
+            // Google Apps Script 部署網址 - 請使用您的實際部署網址
             const scriptUrl = 'https://script.google.com/macros/s/AKfycbzk_JkmX3AtUCXVeoTLXq6yr6SEJ3ooVqUDrcb2qKAimRg9t5LXK7WAH0V3C2FkMtGYQQ/exec';
             
-            console.log("嘗試使用 fetch API 上傳");
-            
-            fetch(scriptUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: data
-            })
-            .then(response => {
+            try {
+                // 使用 fetch API 進行上傳
+                console.log("嘗試使用 fetch API 上傳");
+                const response = await fetch(scriptUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dataToUpload),
+                    redirect: 'follow',
+                    mode: 'cors'
+                });
+                
+                // 檢查回應是否成功
                 if (!response.ok) {
-                    throw new Error('網路回應不正常');
+                    throw new Error(`伺服器回應錯誤: ${response.status} ${response.statusText}`);
                 }
-                return response.json();
-            })
-            .then(result => {
+                
+                // 解析 JSON 回應
+                const result = await response.json();
                 console.log("上傳成功:", result);
-                handleUploadSuccess(result);
-            })
-            .catch(error => {
-                console.error("fetch 上傳失敗:", error);
-                // 如果 fetch 失敗，嘗試使用 XMLHttpRequest
-                tryXhrUpload(data);
-            });
-        }
-        
-        // 使用 XMLHttpRequest 上傳
-        function tryXhrUpload(data) {
-            // Google Apps Script 部署網址
-            const scriptUrl = 'https://script.google.com/macros/s/AKfycbzMgGOxR_TZyXDQHLiLM-bVNPgITYMYQP9Uo_7Uu6Ar1_Jj0wEGcWHwbPPSqWxOOHk/exec';
-            
-            console.log("嘗試使用 XMLHttpRequest 上傳");
-            
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', scriptUrl, true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        try {
-                            const result = JSON.parse(xhr.responseText);
-                            console.log("上傳成功:", result);
-                            handleUploadSuccess(result);
-                        } catch (e) {
-                            console.error("解析回應失敗:", e);
-                            // 如果 XMLHttpRequest 失敗，嘗試使用表單提交
-                            tryFormSubmit(data);
-                        }
-                    } else {
-                        console.error("XMLHttpRequest 失敗:", xhr.status);
-                        // 如果 XMLHttpRequest 失敗，嘗試使用表單提交
-                        tryFormSubmit(data);
-                    }
-                }
-            };
-            
-            xhr.onerror = function() {
-                console.error("XMLHttpRequest 錯誤");
-                // 如果 XMLHttpRequest 失敗，嘗試使用表單提交
-                tryFormSubmit(data);
-            };
-            
-            xhr.send(data);
-        }
-        
-        // 使用表單提交方式上傳
-        function tryFormSubmit(data) {
-            // Google Apps Script 部署網址
-            const scriptUrl = 'https://script.google.com/macros/s/AKfycbzMgGOxR_TZyXDQHLiLM-bVNPgITYMYQP9Uo_7Uu6Ar1_Jj0wEGcWHwbPPSqWxOOHk/exec';
-            
-            console.log("嘗試使用表單提交上傳");
-            
-            // 創建一個隱藏的表單
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = scriptUrl;
-            form.target = '_blank'; // 在新視窗中打開，避免頁面跳轉
-            
-            // 添加資料欄位
-            const dataField = document.createElement('input');
-            dataField.type = 'hidden';
-            dataField.name = 'data';
-            dataField.value = data;
-            form.appendChild(dataField);
-            
-            // 添加表單到文檔並提交
-            document.body.appendChild(form);
-            form.submit();
-            
-            // 移除表單
-            document.body.removeChild(form);
-            
-            // 顯示提示訊息
-            const uploadResultBody = document.getElementById('uploadResultBody');
-            uploadResultBody.innerHTML = `
-                <div class="alert alert-warning">
-                    <h5><i class="bi bi-exclamation-triangle me-2"></i>注意</h5>
-                    <p>系統已嘗試使用替代方式上傳資料。如果新視窗中顯示上傳成功，請手動清空本地資料。</p>
-                </div>
-                <div class="d-grid gap-2">
-                    <button class="btn btn-primary" onclick="clearDataAfterUpload()">
-                        <i class="bi bi-check-circle me-2"></i>上傳成功，清空資料
-                    </button>
-                    <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle me-2"></i>取消
-                    </button>
-                </div>
-            `;
-        }
-        
-        // 處理上傳成功
-        function handleUploadSuccess(result) {
-            const uploadResultBody = document.getElementById('uploadResultBody');
-            
-            if (result.result === 'success') {
+                
+                // 顯示成功訊息
                 uploadResultBody.innerHTML = `
                     <div class="alert alert-success">
                         <h5><i class="bi bi-check-circle me-2"></i>上傳成功</h5>
-                        <p>${result.message}</p>
+                        <p>${result.message || '資料已成功上傳到 Google Sheet'}</p>
                     </div>
                 `;
                 
@@ -591,12 +500,89 @@
                         modal.hide();
                     }
                 }, 3000);
-            } else {
+                
+            } catch (error) {
+                console.error("上傳失敗:", error);
+                
+                // 顯示錯誤訊息
                 uploadResultBody.innerHTML = `
                     <div class="alert alert-danger">
                         <h5><i class="bi bi-exclamation-triangle me-2"></i>上傳失敗</h5>
-                        <p>${result.message || '未知錯誤'}</p>
+                        <p>錯誤訊息: ${error.message}</p>
+                        <p>正在嘗試備用上傳方式...</p>
                     </div>
+                    <div class="progress mt-3">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+                    </div>
+                `;
+                
+                // 嘗試使用備用方法上傳
+                setTimeout(() => {
+                    tryBackupUpload(dataToUpload);
+                }, 1500);
+            }
+        }
+        
+        // 備用上傳方法
+        function tryBackupUpload(dataToUpload) {
+            console.log("嘗試使用備用方式上傳");
+            
+            // 備用 Google Apps Script 部署網址 - 可以與主要網址相同或使用備用網址
+            const backupScriptUrl = 'https://script.google.com/macros/s/AKfycbzMgGOxR_TZyXDQHLiLM-bVNPgITYMYQP9Uo_7Uu6Ar1_Jj0wEGcWHwbPPSqWxOOHk/exec';
+            
+            try {
+                // 將資料轉換為 URL 參數
+                const jsonData = encodeURIComponent(JSON.stringify(dataToUpload));
+                
+                // 創建一個臨時表單並提交
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = backupScriptUrl;
+                form.target = '_blank'; // 在新視窗中開啟回應
+                
+                // 添加資料欄位
+                const dataField = document.createElement('input');
+                dataField.type = 'hidden';
+                dataField.name = 'data';
+                dataField.value = jsonData;
+                form.appendChild(dataField);
+                
+                // 添加表單到頁面並提交
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+                
+                // 更新上傳結果
+                const uploadResultBody = document.getElementById('uploadResultBody');
+                uploadResultBody.innerHTML = `
+                    <div class="alert alert-info">
+                        <h5><i class="bi bi-info-circle me-2"></i>使用備用方式上傳</h5>
+                        <p>已在新視窗中開啟上傳頁面，請查看結果。</p>
+                        <p>若上傳成功，請點擊下方按鈕清空本地資料。</p>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="clearDataAfterUpload()">
+                            <i class="bi bi-check-circle me-2"></i>上傳成功，清空資料
+                        </button>
+                        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-2"></i>取消
+                        </button>
+                    </div>
+                `;
+                
+            } catch (backupError) {
+                console.error("備用上傳方式失敗:", backupError);
+                
+                const uploadResultBody = document.getElementById('uploadResultBody');
+                uploadResultBody.innerHTML += `
+                    <div class="alert alert-danger mt-3">
+                        <h5><i class="bi bi-exclamation-triangle me-2"></i>備用上傳也失敗</h5>
+                        <p>錯誤訊息: ${backupError.message}</p>
+                        <p>建議您保存資料後稍後再試</p>
+                    </div>
+                    <button class="btn btn-primary mt-2" onclick="exportToJSON()">
+                        <i class="bi bi-download me-2"></i>下載資料備份
+                    </button>
                 `;
             }
         }
@@ -611,6 +597,64 @@
             if (modal) {
                 modal.hide();
             }
+            
+            // 顯示成功訊息
+            const successAlert = document.createElement('div');
+            successAlert.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+            successAlert.style.zIndex = '9999';
+            successAlert.style.maxWidth = '500px';
+            successAlert.innerHTML = `
+                <strong>清空成功!</strong> 本地資料已清空。
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            document.body.appendChild(successAlert);
+            
+            // 3秒後自動關閉
+            setTimeout(() => {
+                successAlert.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(successAlert);
+                }, 150);
+            }, 3000);
+        }
+        
+        // 匯出資料為 JSON 檔案
+        function exportToJSON() {
+            if (!workers || workers.length === 0) {
+                alert('沒有資料可匯出');
+                return;
+            }
+            
+            const dataStr = JSON.stringify(workers, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `workers_backup_${new Date().toISOString().slice(0, 10)}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            // 顯示下載成功訊息
+            const downloadAlert = document.createElement('div');
+            downloadAlert.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+            downloadAlert.style.zIndex = '9999';
+            downloadAlert.style.maxWidth = '500px';
+            downloadAlert.innerHTML = `
+                <strong>下載成功!</strong> 資料備份已下載。
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            document.body.appendChild(downloadAlert);
+            
+            // 3秒後自動關閉
+            setTimeout(() => {
+                downloadAlert.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(downloadAlert);
+                }, 150);
+            }, 3000);
         }
     </script>
 </body>
