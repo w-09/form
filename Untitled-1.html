@@ -70,10 +70,10 @@
           <div class="card-body">
               <form id="workerForm">
                   <div class="row">
-                      <div class="col-md-3 mb-2">
+                      <div class="col-md-4 mb-2">
                           <input type="text" class="form-control" id="workerName" placeholder="姓名" required autocomplete="off">
                       </div>
-                      <div class="col-md-3 mb-2">
+                      <div class="col-md-4 mb-2">
                           <select class="form-select" id="workerType" required>
                               <option value="">工種</option>
                               <option value="鋼筋工">鋼筋工</option>
@@ -84,13 +84,23 @@
                               <option value="其他">其他</option>
                           </select>
                       </div>
-                      <div class="col-md-3 mb-2">
-                          <input type="text" class="form-control" id="workerCompany" placeholder="所屬廠商" required autocomplete="off" list="companyList">
-                          <datalist id="companyList">
-                              <!-- 動態填入常用廠商 -->
-                          </datalist>
+                      <div class="col-md-4 mb-2">
+                          <input type="number" class="form-control" id="workerCountInput" placeholder="進場人數" required min="1" value="1">
                       </div>
-                      <div class="col-md-3 mb-2">
+                      <div class="col-md-4 mb-2">
+                          <select class="form-select" id="workLocation" required>
+                              <option value="">工作位置</option>
+                              <option value="A棟">A棟</option>
+                              <option value="B棟">B棟</option>
+                              <option value="C棟">C棟</option>
+                              <option value="地下室">地下室</option>
+                              <option value="公共空間">公共空間</option>
+                          </select>
+                      </div>
+                      <div class="col-md-4 mb-2">
+                          <input type="text" class="form-control" id="workContent" placeholder="施工內容" required autocomplete="off">
+                      </div>
+                      <div class="col-md-4 mb-2">
                           <button type="submit" class="btn btn-primary w-100">
                               <i class="bi bi-plus"></i> 新增
                           </button>
@@ -111,7 +121,7 @@
                   <i class="bi bi-list-ul"></i> 今日進場人員
               </h5>
               <div>
-                  <span class="badge bg-primary" id="workerCount">0 人</span>
+                  <span class="badge bg-primary" id="totalWorkerCount">0 人</span>
               </div>
           </div>
           <div class="card-body">
@@ -121,7 +131,9 @@
                           <tr>
                               <th>姓名</th>
                               <th>工種</th>
-                              <th>所屬廠商</th>
+                              <th>進場人數</th>
+                              <th>工作位置</th>
+                              <th>施工內容</th>
                               <th>進場時間</th>
                               <th>操作</th>
                           </tr>
@@ -178,13 +190,10 @@
   
   <script>
       // Google Apps Script 部署網址
-      const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxtW_mcVvsPUwK9nw2axd9CmW-hGymmO9qut8iD-CKnMw7LaybouZLIuzaqFRtCA1vs/exec';
+      const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHOmbBYv2s0Gr-qSZ-7PIY65gnahAxqkihZjZ-_4DR_m_BWkppqeoYV_v6KGU-RjZo/exec';
 
       // 工人資料陣列
       let workers = [];
-      
-      // 常用廠商列表 (可從本地儲存中讀取)
-      let commonCompanies = JSON.parse(localStorage.getItem('commonCompanies')) || [];
 
       // 初始化模態框
       const uploadResultModal = new bootstrap.Modal(document.getElementById('uploadResultModal'));
@@ -228,27 +237,17 @@
           localStorage.setItem('workers', JSON.stringify(workers));
       }
 
-      // 更新常用廠商下拉清單
-      function updateCompanyDatalist() {
-          const companyList = document.getElementById('companyList');
-          companyList.innerHTML = '';
-          
-          commonCompanies.forEach(company => {
-              const option = document.createElement('option');
-              option.value = company;
-              companyList.appendChild(option);
-          });
-      }
-
       // 表單提交事件
       document.getElementById('workerForm').addEventListener('submit', function(e) {
           e.preventDefault();
           
           const name = document.getElementById('workerName').value.trim();
           const type = document.getElementById('workerType').value;
-          const company = document.getElementById('workerCompany').value.trim();
+          const count = document.getElementById('workerCountInput').value;
+          const location = document.getElementById('workLocation').value;
+          const content = document.getElementById('workContent').value.trim();
           
-          if (!name || !type || !company) {
+          if (!name || !type || !count || !location || !content || count < 1) {
               alert('請填寫完整資料');
               return;
           }
@@ -257,7 +256,9 @@
           const worker = {
               name: name,
               type: type,
-              company: company,
+              count: parseInt(count),  // 確保是數字類型
+              location: location,
+              content: content,
               entryTime: new Date().toLocaleString('zh-TW', {
                   hour: '2-digit',
                   minute: '2-digit',
@@ -274,18 +275,9 @@
           // 保存到本地儲存
           saveWorkersToLocalStorage();
           
-          // 更新常用廠商列表
-          if (!commonCompanies.includes(company)) {
-              commonCompanies.push(company);
-              if (commonCompanies.length > 10) {
-                  commonCompanies.shift(); // 保留最近10個
-              }
-              localStorage.setItem('commonCompanies', JSON.stringify(commonCompanies));
-              updateCompanyDatalist();
-          }
-          
           // 顯示最近新增的人員
-          document.getElementById('recentWorkerInfo').textContent = `${name} (${type} - ${company})`;
+          document.getElementById('recentWorkerInfo').textContent = 
+              `${name} (${type} - ${count}人) 於${location}進行${content}`;
           const recentAddition = document.getElementById('recentAddition');
           recentAddition.style.display = 'block';
           
@@ -297,8 +289,10 @@
           // 清空輸入
           document.getElementById('workerName').value = '';
           document.getElementById('workerType').value = '';
-          // 保留廠商名稱以便連續輸入
-          // document.getElementById('workerCompany').value = '';
+          document.getElementById('workLocation').value = '';
+          document.getElementById('workContent').value = '';
+          // 保留人數值以便連續輸入
+          // document.getElementById('workerCountInput').value = '1';
           
           // 聚焦到姓名輸入框
           document.getElementById('workerName').focus();
@@ -308,13 +302,16 @@
       function updateWorkerTable() {
           const tableBody = document.getElementById('workerTableBody');
           const emptyMessage = document.getElementById('emptyTableMessage');
-          const workerCount = document.getElementById('workerCount');
+          const workerCountDisplay = document.getElementById('totalWorkerCount');
+          
+          // 計算總人數
+          const totalCount = workers.reduce((total, worker) => total + parseInt(worker.count || 1), 0);
           
           // 清空表格
           tableBody.innerHTML = '';
           
           // 更新人數計數
-          workerCount.textContent = `${workers.length} 人`;
+          workerCountDisplay.textContent = `${totalCount} 人`;
           
           // 如果沒有資料，顯示空白訊息
           if (workers.length === 0) {
@@ -333,7 +330,9 @@
               row.innerHTML = `
                   <td>${worker.name}</td>
                   <td>${worker.type}</td>
-                  <td>${worker.company}</td>
+                  <td>${worker.count || 1}人</td>
+                  <td>${worker.location || '-'}</td>
+                  <td>${worker.content || '-'}</td>
                   <td>${worker.entryTime}</td>
                   <td>
                       <button class="btn btn-sm btn-outline-danger delete-btn" data-index="${index}">
@@ -593,245 +592,7 @@
       // 頁面載入時初始化
       document.addEventListener('DOMContentLoaded', function() {
           loadWorkersFromLocalStorage();
-          updateCompanyDatalist();
       });
   </script>
 </body>
 </html>
----------------前端
-// 使用您提供的試算表 ID
-const SPREADSHEET_ID = '1vSwKgZISco6nhpjVpawJizrPLsLTBsN4psA4dgGtWc4'; 
-const SHEET_NAME = '人員登記';  // 根據您試算表中的工作表名稱調整
-
-/**
- * 處理 POST 請求
- * 接收前端傳來的工人資料並寫入試算表
- */
-function doPost(e) {
-  try {
-    // 記錄請求開始
-    console.log('收到 POST 請求');
-    
-    // 記錄請求內容
-    if (e) {
-      console.log('請求內容:', JSON.stringify(e));
-    } else {
-      console.log('請求物件為空');
-    }
-    
-    // 初始化 data 變數
-    let data;
-    
-    // 解析 POST 請求中的資料
-    if (e && e.postData && e.postData.contents) {
-      console.log('從 postData.contents 解析資料');
-      console.log('原始內容:', e.postData.contents);
-      try {
-        // 嘗試解析 JSON 格式
-        data = JSON.parse(e.postData.contents);
-        console.log('成功解析 JSON 資料');
-      } catch (jsonError) {
-        console.log('JSON 解析失敗:', jsonError.message);
-        
-        // 如果不是 JSON 格式，嘗試解析表單格式
-        if (e.parameter && e.parameter.data) {
-          console.log('從 parameter.data 解析資料');
-          console.log('表單參數:', e.parameter.data);
-          data = JSON.parse(e.parameter.data);
-          console.log('成功從表單參數解析資料');
-        } else {
-          console.log('無法從表單參數解析資料');
-          throw new Error('無法解析請求資料');
-        }
-      }
-    } else if (e && e.parameter && e.parameter.data) {
-      console.log('直接從 parameter.data 解析資料');
-      console.log('表單參數:', e.parameter.data);
-      data = JSON.parse(e.parameter.data);
-      console.log('成功從表單參數解析資料');
-    } else {
-      console.log('找不到任何可解析的資料');
-      // 如果沒有找到資料，返回錯誤
-      return ContentService.createTextOutput(JSON.stringify({
-        result: 'error',
-        message: '請求中未包含資料'
-      })).setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    // 記錄解析後的資料
-    console.log('解析後的資料:', JSON.stringify(data));
-    
-    // 確保資料是陣列
-    if (!Array.isArray(data)) {
-      console.log('資料不是陣列，轉換為陣列');
-      data = [data];
-    }
-    
-    // 如果資料為空，返回錯誤
-    if (data.length === 0) {
-      console.log('資料陣列為空');
-      return ContentService.createTextOutput(JSON.stringify({
-        result: 'error',
-        message: '沒有資料可寫入'
-      })).setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    console.log('準備寫入資料到試算表，資料筆數:', data.length);
-    
-    // 寫入資料到試算表
-    const result = writeToSheet(data);
-    
-    console.log('寫入結果:', JSON.stringify(result));
-    
-    // 返回成功響應
-    return ContentService.createTextOutput(JSON.stringify({
-      result: 'success',
-      message: `成功寫入 ${result.count} 筆資料`,
-      details: result
-    })).setMimeType(ContentService.MimeType.JSON);
-    
-  } catch (error) {
-    // 捕獲並記錄錯誤
-    console.error('處理請求時發生錯誤:', error.message, error.stack);
-    
-    // 返回錯誤響應
-    return ContentService.createTextOutput(JSON.stringify({
-      result: 'error',
-      message: '處理請求時發生錯誤: ' + error.message
-    })).setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-/**
- * 處理 OPTIONS 請求 (CORS 預檢請求)
- */
-function doOptions() {
-  console.log('收到 OPTIONS 請求 (CORS 預檢)');
-  
-  // 正確設置 CORS 標頭
-  return ContentService.createTextOutput('')
-    .setMimeType(ContentService.MimeType.TEXT)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type')
-    .setHeader('Access-Control-Max-Age', '86400');
-}
-
-/**
- * 將資料寫入試算表
- */
-function writeToSheet(data) {
-  try {
-    console.log('開始寫入試算表');
-    console.log('試算表 ID:', SPREADSHEET_ID);
-    console.log('工作表名稱:', SHEET_NAME);
-    
-    // 獲取試算表和工作表
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    console.log('成功開啟試算表');
-    
-    let sheet = ss.getSheetByName(SHEET_NAME);
-    
-    // 如果工作表不存在，則創建一個
-    if (!sheet) {
-      console.log('工作表不存在，創建新工作表');
-      sheet = ss.insertSheet(SHEET_NAME);
-      
-      // 設置標題行
-      sheet.appendRow(['日期', '姓名', '工種', '所屬廠商', '進場時間', '記錄時間']);
-      console.log('已創建標題行');
-      
-      // 凍結標題行並設置格式
-      sheet.setFrozenRows(1);
-      sheet.getRange(1, 1, 1, 6).setBackground('#f3f3f3').setFontWeight('bold');
-      console.log('已設置標題行格式');
-    } else {
-      console.log('找到現有工作表');
-    }
-    
-    // 獲取當前日期
-    const today = new Date();
-    const dateString = Utilities.formatDate(today, 'Asia/Taipei', 'yyyy/MM/dd');
-    console.log('今日日期:', dateString);
-    
-    // 準備要寫入的資料
-    const rowsToAdd = [];
-    
-    data.forEach((worker, index) => {
-      // 記錄時間（台北時區）
-      const recordTime = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy/MM/dd HH:mm:ss');
-      
-      console.log(`處理第 ${index + 1} 筆資料:`, JSON.stringify(worker));
-      
-      // 組合一行資料
-      rowsToAdd.push([
-        dateString,
-        worker.name,
-        worker.type,
-        worker.company,
-        worker.entryTime,
-        recordTime
-      ]);
-    });
-    
-    console.log('準備寫入 ' + rowsToAdd.length + ' 筆資料');
-    
-    // 批量寫入資料（提高效率）
-    if (rowsToAdd.length > 0) {
-      const lastRow = sheet.getLastRow();
-      console.log('試算表最後一行:', lastRow);
-      
-      const range = sheet.getRange(lastRow + 1, 1, rowsToAdd.length, 6);
-      console.log('寫入範圍:', `${lastRow + 1}:1 到 ${lastRow + rowsToAdd.length}:6`);
-      
-      range.setValues(rowsToAdd);
-      console.log('資料寫入完成');
-    }
-    
-    // 返回寫入結果
-    return {
-      count: rowsToAdd.length,
-      date: dateString
-    };
-    
-  } catch (error) {
-    // 捕獲並記錄錯誤
-    console.error('寫入試算表時發生錯誤:', error.message, error.stack);
-    throw new Error('寫入試算表時發生錯誤: ' + error.message);
-  }
-}
-
-/**
- * 處理 GET 請求（用於測試）
- */
-function doGet() {
-  console.log('收到 GET 請求');
-  return ContentService.createTextOutput(JSON.stringify({
-    status: 'success',
-    message: '伺服器正常運行中',
-    time: new Date().toString()
-  })).setMimeType(ContentService.MimeType.JSON);
-}
-
-/**
- * 測試函數 - 可以在 Apps Script 編輯器中運行以測試功能
- */
-function testWriteToSheet() {
-  console.log('開始測試寫入功能');
-  
-  // 測試資料
-  const testData = [
-    { name: '測試人員1', type: '鋼筋工', company: '測試公司', entryTime: '08:30' },
-    { name: '測試人員2', type: '模板工', company: '測試公司', entryTime: '09:15' }
-  ];
-  
-  console.log('測試資料:', JSON.stringify(testData));
-  
-  // 測試寫入
-  try {
-    const result = writeToSheet(testData);
-    console.log('測試成功:', JSON.stringify(result));
-  } catch (error) {
-    console.error('測試失敗:', error.message);
-  }
-}
