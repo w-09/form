@@ -70,10 +70,10 @@
           <div class="card-body">
               <form id="workerForm">
                   <div class="row">
-                      <div class="col-md-3 mb-2">
+                      <div class="col-md-4 mb-2">
                           <input type="text" class="form-control" id="workerName" placeholder="姓名" required autocomplete="off">
                       </div>
-                      <div class="col-md-3 mb-2">
+                      <div class="col-md-4 mb-2">
                           <select class="form-select" id="workerType" required>
                               <option value="">工種</option>
                               <option value="鋼筋工">鋼筋工</option>
@@ -84,13 +84,23 @@
                               <option value="其他">其他</option>
                           </select>
                       </div>
-                      <div class="col-md-3 mb-2">
-                          <input type="text" class="form-control" id="workerCompany" placeholder="所屬廠商" required autocomplete="off" list="companyList">
-                          <datalist id="companyList">
-                              <!-- 動態填入常用廠商 -->
-                          </datalist>
+                      <div class="col-md-4 mb-2">
+                          <input type="number" class="form-control" id="workerCount" placeholder="進場人數" required min="1" value="1">
                       </div>
-                      <div class="col-md-3 mb-2">
+                      <div class="col-md-4 mb-2">
+                          <select class="form-select" id="workLocation" required>
+                              <option value="">工作位置</option>
+                              <option value="A棟">A棟</option>
+                              <option value="B棟">B棟</option>
+                              <option value="C棟">C棟</option>
+                              <option value="地下室">地下室</option>
+                              <option value="公共空間">公共空間</option>
+                          </select>
+                      </div>
+                      <div class="col-md-4 mb-2">
+                          <input type="text" class="form-control" id="workContent" placeholder="施工內容" required autocomplete="off">
+                      </div>
+                      <div class="col-md-4 mb-2">
                           <button type="submit" class="btn btn-primary w-100">
                               <i class="bi bi-plus"></i> 新增
                           </button>
@@ -121,7 +131,9 @@
                           <tr>
                               <th>姓名</th>
                               <th>工種</th>
-                              <th>所屬廠商</th>
+                              <th>進場人數</th>
+                              <th>工作位置</th>
+                              <th>施工內容</th>
                               <th>進場時間</th>
                               <th>操作</th>
                           </tr>
@@ -182,9 +194,6 @@
 
       // 工人資料陣列
       let workers = [];
-      
-      // 常用廠商列表 (可從本地儲存中讀取)
-      let commonCompanies = JSON.parse(localStorage.getItem('commonCompanies')) || [];
 
       // 初始化模態框
       const uploadResultModal = new bootstrap.Modal(document.getElementById('uploadResultModal'));
@@ -228,27 +237,17 @@
           localStorage.setItem('workers', JSON.stringify(workers));
       }
 
-      // 更新常用廠商下拉清單
-      function updateCompanyDatalist() {
-          const companyList = document.getElementById('companyList');
-          companyList.innerHTML = '';
-          
-          commonCompanies.forEach(company => {
-              const option = document.createElement('option');
-              option.value = company;
-              companyList.appendChild(option);
-          });
-      }
-
       // 表單提交事件
       document.getElementById('workerForm').addEventListener('submit', function(e) {
           e.preventDefault();
           
           const name = document.getElementById('workerName').value.trim();
           const type = document.getElementById('workerType').value;
-          const company = document.getElementById('workerCompany').value.trim();
+          const count = document.getElementById('workerCount').value;
+          const location = document.getElementById('workLocation').value;
+          const content = document.getElementById('workContent').value.trim();
           
-          if (!name || !type || !company) {
+          if (!name || !type || !count || !location || !content || count < 1) {
               alert('請填寫完整資料');
               return;
           }
@@ -257,7 +256,9 @@
           const worker = {
               name: name,
               type: type,
-              company: company,
+              count: count,
+              location: location,
+              content: content,
               entryTime: new Date().toLocaleString('zh-TW', {
                   hour: '2-digit',
                   minute: '2-digit',
@@ -274,18 +275,9 @@
           // 保存到本地儲存
           saveWorkersToLocalStorage();
           
-          // 更新常用廠商列表
-          if (!commonCompanies.includes(company)) {
-              commonCompanies.push(company);
-              if (commonCompanies.length > 10) {
-                  commonCompanies.shift(); // 保留最近10個
-              }
-              localStorage.setItem('commonCompanies', JSON.stringify(commonCompanies));
-              updateCompanyDatalist();
-          }
-          
           // 顯示最近新增的人員
-          document.getElementById('recentWorkerInfo').textContent = `${name} (${type} - ${company})`;
+          document.getElementById('recentWorkerInfo').textContent = 
+              `${name} (${type} - ${count}人) 於${location}進行${content}`;
           const recentAddition = document.getElementById('recentAddition');
           recentAddition.style.display = 'block';
           
@@ -297,8 +289,10 @@
           // 清空輸入
           document.getElementById('workerName').value = '';
           document.getElementById('workerType').value = '';
-          // 保留廠商名稱以便連續輸入
-          // document.getElementById('workerCompany').value = '';
+          document.getElementById('workLocation').value = '';
+          document.getElementById('workContent').value = '';
+          // 保留人數值以便連續輸入
+          // document.getElementById('workerCount').value = '1';
           
           // 聚焦到姓名輸入框
           document.getElementById('workerName').focus();
@@ -308,13 +302,16 @@
       function updateWorkerTable() {
           const tableBody = document.getElementById('workerTableBody');
           const emptyMessage = document.getElementById('emptyTableMessage');
-          const workerCount = document.getElementById('workerCount');
+          const workerCountDisplay = document.getElementById('workerCount');
+          
+          // 計算總人數
+          const totalCount = workers.reduce((total, worker) => total + parseInt(worker.count || 1), 0);
           
           // 清空表格
           tableBody.innerHTML = '';
           
           // 更新人數計數
-          workerCount.textContent = `${workers.length} 人`;
+          workerCountDisplay.textContent = `${totalCount} 人`;
           
           // 如果沒有資料，顯示空白訊息
           if (workers.length === 0) {
@@ -333,7 +330,9 @@
               row.innerHTML = `
                   <td>${worker.name}</td>
                   <td>${worker.type}</td>
-                  <td>${worker.company}</td>
+                  <td>${worker.count || 1}人</td>
+                  <td>${worker.location || '-'}</td>
+                  <td>${worker.content || '-'}</td>
                   <td>${worker.entryTime}</td>
                   <td>
                       <button class="btn btn-sm btn-outline-danger delete-btn" data-index="${index}">
@@ -593,7 +592,6 @@
       // 頁面載入時初始化
       document.addEventListener('DOMContentLoaded', function() {
           loadWorkersFromLocalStorage();
-          updateCompanyDatalist();
       });
   </script>
 </body>
