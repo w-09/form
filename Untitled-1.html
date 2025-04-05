@@ -174,7 +174,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   
   <script>
-      // Google Apps Script 部署網址 (請替換為您的實際部署網址)
+      // Google Apps Script 部署網址
       const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxtW_mcVvsPUwK9nw2axd9CmW-hGymmO9qut8iD-CKnMw7LaybouZLIuzaqFRtCA1vs/exec';
 
       // 工人資料陣列
@@ -256,12 +256,8 @@
               type: type,
               company: company,
               entryTime: new Date().toLocaleString('zh-TW', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
                   hour: '2-digit',
                   minute: '2-digit',
-                  second: '2-digit',
                   hour12: false
               })
           };
@@ -376,7 +372,7 @@
           }
       });
 
-      // 上傳到 Google 試算表
+      // 上傳到 Google 試算表 - 使用 fetch API 而不是表單提交
       function uploadToGoogleSheet() {
           // 顯示上傳中訊息
           uploadResultBody.innerHTML = `
@@ -389,6 +385,62 @@
           `;
           uploadResultModal.show();
           
+          // 準備表單數據
+          const formData = new FormData();
+          formData.append('data', JSON.stringify(workers));
+          
+          // 發送請求到 Google Apps Script
+          fetch(APPS_SCRIPT_URL, {
+              method: 'POST',
+              body: formData
+          })
+          .then(response => {
+              // 檢查是否收到有效響應
+              if (!response.ok) {
+                  throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`);
+              }
+              return response.json();
+          })
+          .then(data => {
+              // 處理成功響應
+              if (data && data.result === 'success') {
+                  uploadResultBody.innerHTML = `
+                      <div class="alert alert-success">
+                          <i class="bi bi-check-circle-fill"></i> 成功上傳 ${workers.length} 筆資料到 Google 試算表
+                      </div>
+                      <p>${data.message || '您可以在 Google 試算表中查看所有上傳的資料。'}</p>
+                  `;
+                  
+                  // 清空本地資料
+                  workers = [];
+                  updateWorkerTable();
+                  saveWorkersToLocalStorage();
+              } else {
+                  // 處理業務邏輯錯誤
+                  throw new Error(data.message || '上傳過程中發生未知錯誤');
+              }
+          })
+          .catch(error => {
+              // 處理網絡錯誤或其他錯誤
+              console.error('上傳錯誤:', error);
+              
+              // 顯示備用上傳方法
+              uploadResultBody.innerHTML = `
+                  <div class="alert alert-danger">
+                      <i class="bi bi-exclamation-triangle-fill"></i> 上傳時發生錯誤: ${error.message}
+                  </div>
+                  <p>正在嘗試備用上傳方法，請稍候...</p>
+              `;
+              
+              // 使用表單提交作為備用方法
+              setTimeout(() => {
+                  uploadWithFormSubmit();
+              }, 1000);
+          });
+      }
+      
+      // 備用上傳方法 - 使用表單提交
+      function uploadWithFormSubmit() {
           // 使用表單提交方式避免 CORS 問題
           const form = document.createElement('form');
           form.method = 'POST';
