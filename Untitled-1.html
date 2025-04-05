@@ -19,6 +19,37 @@
           width: 1rem;
           height: 1rem;
       }
+      .form-control:focus, .form-select:focus {
+          border-color: #86b7fe;
+          box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+      }
+      .btn-primary {
+          background-color: #0d6efd;
+          border-color: #0d6efd;
+      }
+      .btn-primary:hover {
+          background-color: #0b5ed7;
+          border-color: #0a58ca;
+      }
+      .card {
+          box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+      }
+      .card-header {
+          background-color: rgba(0, 0, 0, 0.03);
+      }
+      .empty-table-message {
+          text-align: center;
+          padding: 2rem;
+          color: #6c757d;
+      }
+      /* 新增動畫效果 */
+      .fade-in {
+          animation: fadeIn 0.5s;
+      }
+      @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+      }
   </style>
 </head>
 <body>
@@ -40,7 +71,7 @@
               <form id="workerForm">
                   <div class="row">
                       <div class="col-md-3 mb-2">
-                          <input type="text" class="form-control" id="workerName" placeholder="姓名" required>
+                          <input type="text" class="form-control" id="workerName" placeholder="姓名" required autocomplete="off">
                       </div>
                       <div class="col-md-3 mb-2">
                           <select class="form-select" id="workerType" required>
@@ -54,7 +85,7 @@
                           </select>
                       </div>
                       <div class="col-md-3 mb-2">
-                          <input type="text" class="form-control" id="workerCompany" placeholder="所屬廠商" required>
+                          <input type="text" class="form-control" id="workerCompany" placeholder="所屬廠商" required autocomplete="off">
                       </div>
                       <div class="col-md-3 mb-2">
                           <button type="submit" class="btn btn-primary w-100">
@@ -64,6 +95,11 @@
                   </div>
               </form>
           </div>
+      </div>
+
+      <!-- 顯示最近新增的人員 -->
+      <div id="recentAddition" class="alert alert-success fade-in" style="display: none;">
+          已新增：<span id="recentWorkerInfo"></span>
       </div>
 
       <div class="card">
@@ -91,6 +127,9 @@
                           <!-- 動態填入 -->
                       </tbody>
                   </table>
+                  <div id="emptyTableMessage" class="empty-table-message">
+                      <i class="bi bi-info-circle"></i> 尚未有人員進場記錄
+                  </div>
               </div>
           </div>
           <div class="card-footer">
@@ -128,15 +167,20 @@
       </div>
   </div>
 
-
+  <!-- 引入 Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
   <script>
       // Google Apps Script 部署網址 (請替換為您的實際部署網址)
       const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxtW_mcVvsPUwK9nw2axd9CmW-hGymmO9qut8iD-CKnMw7LaybouZLIuzaqFRtCA1vs/exec';
 
       // 工人資料陣列
       let workers = [];
+      
+      // 常用廠商列表 (可從本地儲存中讀取)
+      let commonCompanies = JSON.parse(localStorage.getItem('commonCompanies')) || [];
 
-      // 上傳結果模態框
+      // 初始化模態框
       const uploadResultModal = new bootstrap.Modal(document.getElementById('uploadResultModal'));
       const uploadResultBody = document.getElementById('uploadResultBody');
 
@@ -159,13 +203,37 @@
       setInterval(updateCurrentTime, 1000);
       updateCurrentTime();
 
+      // 從本地儲存讀取之前的工人資料
+      function loadWorkersFromLocalStorage() {
+          const savedWorkers = localStorage.getItem('workers');
+          if (savedWorkers) {
+              try {
+                  workers = JSON.parse(savedWorkers);
+                  updateWorkerTable();
+              } catch (e) {
+                  console.error('讀取本地儲存資料失敗:', e);
+                  localStorage.removeItem('workers');
+              }
+          }
+      }
+
+      // 保存工人資料到本地儲存
+      function saveWorkersToLocalStorage() {
+          localStorage.setItem('workers', JSON.stringify(workers));
+      }
+
       // 表單提交事件
       document.getElementById('workerForm').addEventListener('submit', function(e) {
           e.preventDefault();
           
-          const name = document.getElementById('workerName').value;
+          const name = document.getElementById('workerName').value.trim();
           const type = document.getElementById('workerType').value;
-          const company = document.getElementById('workerCompany').value;
+          const company = document.getElementById('workerCompany').value.trim();
+          
+          if (!name || !type || !company) {
+              alert('請填寫完整資料');
+              return;
+          }
           
           // 建立工人物件
           const worker = {
@@ -189,21 +257,55 @@
           // 更新表格
           updateWorkerTable();
           
+          // 保存到本地儲存
+          saveWorkersToLocalStorage();
+          
+          // 更新常用廠商列表
+          if (!commonCompanies.includes(company)) {
+              commonCompanies.push(company);
+              if (commonCompanies.length > 10) {
+                  commonCompanies.shift(); // 保留最近10個
+              }
+              localStorage.setItem('commonCompanies', JSON.stringify(commonCompanies));
+          }
+          
+          // 顯示最近新增的人員
+          document.getElementById('recentWorkerInfo').textContent = `${name} (${type} - ${company})`;
+          const recentAddition = document.getElementById('recentAddition');
+          recentAddition.style.display = 'block';
+          
+          // 3秒後隱藏提示
+          setTimeout(() => {
+              recentAddition.style.display = 'none';
+          }, 3000);
+          
           // 清空輸入
           document.getElementById('workerName').value = '';
           document.getElementById('workerType').value = '';
-          document.getElementById('workerCompany').value = '';
+          // 保留廠商名稱以便連續輸入同一廠商的人員
+          // document.getElementById('workerCompany').value = '';
+          
+          // 聚焦到姓名輸入框
+          document.getElementById('workerName').focus();
       });
 
       // 更新工人表格
       function updateWorkerTable() {
           const tableBody = document.getElementById('workerTableBody');
           const workerCountBadge = document.getElementById('workerCount');
+          const emptyTableMessage = document.getElementById('emptyTableMessage');
+          
           tableBody.innerHTML = '';
 
-          workers.forEach((worker, index) => {
-              const row = `
-                  <tr>
+          if (workers.length === 0) {
+              emptyTableMessage.style.display = 'block';
+          } else {
+              emptyTableMessage.style.display = 'none';
+              
+              workers.forEach((worker, index) => {
+                  const row = document.createElement('tr');
+                  row.className = 'fade-in';
+                  row.innerHTML = `
                       <td>${worker.name}</td>
                       <td>${worker.type}</td>
                       <td>${worker.company}</td>
@@ -213,10 +315,10 @@
                               <i class="bi bi-trash"></i>
                           </button>
                       </td>
-                  </tr>
-              `;
-              tableBody.innerHTML += row;
-          });
+                  `;
+                  tableBody.appendChild(row);
+              });
+          }
 
           // 更新人數
           workerCountBadge.textContent = `${workers.length} 人`;
@@ -224,8 +326,11 @@
 
       // 移除工人
       function removeWorker(index) {
-          workers.splice(index, 1);
-          updateWorkerTable();
+          if (confirm(`確定要移除 ${workers[index].name} 的記錄嗎？`)) {
+              workers.splice(index, 1);
+              updateWorkerTable();
+              saveWorkersToLocalStorage();
+          }
       }
 
       // 批次上傳
@@ -242,12 +347,16 @@
           try {
               const response = await fetch(APPS_SCRIPT_URL, {
                   method: 'POST',
-                  mode: 'cors', // 使用 cors 模式
                   headers: {
                       'Content-Type': 'application/json'
                   },
                   body: JSON.stringify(workers)
               });
+
+              // 檢查回應狀態
+              if (!response.ok) {
+                  throw new Error(`HTTP 錯誤：${response.status}`);
+              }
 
               // 解析回應
               const result = await response.json();
@@ -258,17 +367,38 @@
                       ${result.message}
                   </div>
               `;
-              uploadResultModal.show();
-
+              
               if (result.status === 'success') {
-                  workers = []; // 清空陣列
+                  uploadResultBody.innerHTML += `
+                      <div class="text-center mt-3">
+                          <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                          <p class="mt-2">資料已成功儲存至 ${result.date} 工作表</p>
+                      </div>
+                  `;
+                  
+                  // 清空陣列和本地儲存
+                  workers = [];
+                  localStorage.removeItem('workers');
                   updateWorkerTable();
               }
+              
+              uploadResultModal.show();
           } catch (error) {
               console.error('上傳發生錯誤:', error);
               uploadResultBody.innerHTML = `
                   <div class="alert alert-danger">
+                      <i class="bi bi-exclamation-triangle-fill me-2"></i>
                       上傳發生錯誤：${error.message}
+                  </div>
+                  <div class="mt-3">
+                      <p><strong>可能原因：</strong></p>
+                      <ul>
+                          <li>網路連線問題</li>
+                          <li>Google Apps Script 服務暫時無法使用</li>
+                          <li>部署網址錯誤或已過期</li>
+                      </ul>
+                      <p>請稍後再試或聯繫系統管理員。</p>
+                      <p class="text-muted small">您的資料仍保留在本機，不會遺失。</p>
                   </div>
               `;
               uploadResultModal.show();
@@ -276,16 +406,27 @@
               setTimeout(() => {
                   submitButton.disabled = false;
                   submitButton.innerHTML = '<i class="bi bi-cloud-upload"></i> 批次上傳';
-              }, 3000);
+              }, 1000);
           }
       });
 
       // 清空列表
       document.getElementById('clearAllBtn').addEventListener('click', function() {
-          if (confirm('確定要清空所有人員嗎？')) {
+          if (workers.length === 0) {
+              alert('列表已經是空的');
+              return;
+          }
+          
+          if (confirm(`確定要清空所有 ${workers.length} 筆人員記錄嗎？`)) {
               workers = [];
+              localStorage.removeItem('workers');
               updateWorkerTable();
           }
+      });
+
+      // 初始化頁面時載入本地儲存的資料
+      document.addEventListener('DOMContentLoaded', function() {
+          loadWorkersFromLocalStorage();
       });
   </script>
 </body>
