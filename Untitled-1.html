@@ -243,7 +243,7 @@
           
           const name = document.getElementById('workerName').value.trim();
           const type = document.getElementById('workerType').value;
-          const count = document.getElementById('workerCountInput').value;
+          const count = parseInt(document.getElementById('workerCountInput').value); // 確保是數字
           const location = document.getElementById('workLocation').value;
           const content = document.getElementById('workContent').value.trim();
           
@@ -252,11 +252,11 @@
               return;
           }
           
-          // 建立工人物件
+          // 建立工人物件 - 確保所有欄位都有明確定義
           const worker = {
               name: name,
               type: type,
-              count: parseInt(count),  // 確保是數字類型
+              count: count,  // 確保是數字類型
               location: location,
               content: content,
               entryTime: new Date().toLocaleString('zh-TW', {
@@ -387,11 +387,21 @@
           `;
           uploadResultModal.show();
           
+          // 確保所有欄位都有正確的類型
+          const processedWorkers = workers.map(worker => ({
+              name: worker.name,
+              type: worker.type,
+              count: parseInt(worker.count) || 1, // 確保是數字
+              location: worker.location || '',
+              content: worker.content || '',
+              entryTime: worker.entryTime
+          }));
+          
           // 準備要上傳的資料
-          const dataToUpload = JSON.stringify(workers);
+          const dataToUpload = JSON.stringify(processedWorkers);
           console.log("準備上傳資料:", dataToUpload);
           
-          // 嘗試使用 fetch API 進行上傳 (現代瀏覽器支援)
+          // 嘗試使用 fetch API 進行上傳
           tryFetchUpload(dataToUpload);
       }
 
@@ -402,9 +412,9 @@
           fetch(APPS_SCRIPT_URL, {
               method: 'POST',
               headers: {
-                  'Content-Type': 'application/x-www-form-urlencoded',
+                  'Content-Type': 'application/json', // 使用 JSON 格式
               },
-              body: 'data=' + encodeURIComponent(dataToUpload)
+              body: JSON.stringify({ data: dataToUpload }) // 包裝在 data 欄位中
           })
           .then(response => {
               console.log("收到 fetch 回應:", response);
@@ -434,7 +444,7 @@
           
           const xhr = new XMLHttpRequest();
           xhr.open('POST', APPS_SCRIPT_URL, true);
-          xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+          xhr.setRequestHeader('Content-Type', 'application/json'); // 使用 JSON 格式
           
           xhr.onload = function() {
               console.log("收到 XHR 回應:", xhr.status, xhr.responseText);
@@ -458,7 +468,7 @@
               tryFormSubmitUpload(dataToUpload);
           };
           
-          xhr.send('data=' + encodeURIComponent(dataToUpload));
+          xhr.send(JSON.stringify({ data: dataToUpload })); // 包裝在 data 欄位中
       }
 
       // 使用表單提交方式嘗試上傳 (最後的備用方案)
@@ -502,7 +512,7 @@
           form.action = APPS_SCRIPT_URL;
           form.target = 'hidden-iframe';
           
-          // 添加資料
+          // 添加資料 - 使用隱藏輸入框
           const input = document.createElement('input');
           input.type = 'hidden';
           input.name = 'data';
