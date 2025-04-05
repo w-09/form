@@ -237,31 +237,34 @@
       document.getElementById('workerForm').addEventListener('submit', function(e) {
           e.preventDefault();
           
-          const type = document.getElementById('workerType').value;
-          const count = document.getElementById('workerCountInput').value;
-          const location = document.getElementById('workLocation').value;
-          const content = document.getElementById('workContent').value.trim();
+          // 變數名稱調整為與 Apps Script 一致
+          const worker = {
+              type: document.getElementById('workerType').value,
+              location: document.getElementById('workLocation').value,
+              content: document.getElementById('workContent').value.trim()
+          };
+          const workerCount = document.getElementById('workerCountInput').value;
           
-          if (!type || !count || !location || !content || count < 1) {
+          if (!worker.type || !workerCount || !worker.location || !worker.content || workerCount < 1) {
               alert('請填寫完整資料');
               return;
           }
           
-          // 建立工人物件
-          const worker = {
-              type: type,
-              count: parseInt(count),  // 確保是數字類型
-              location: location,
-              content: content,
+          // 輸出與 Apps Script 格式一致的日誌
+          console.log(`工種: ${worker.type}, 人數: ${workerCount}, 位置: ${worker.location || ''}, 施工內容: ${worker.content || ''}`);
+          
+          // 加入陣列 (保持原有的資料結構)
+          workers.push({
+              type: worker.type,
+              count: parseInt(workerCount),  // 確保是數字類型
+              location: worker.location,
+              content: worker.content,
               entryTime: new Date().toLocaleString('zh-TW', {
                   hour: '2-digit',
                   minute: '2-digit',
                   hour12: false
               })
-          };
-
-          // 加入陣列
-          workers.push(worker);
+          });
           
           // 更新表格
           updateWorkerTable();
@@ -271,7 +274,7 @@
           
           // 顯示最近新增的人員
           document.getElementById('recentWorkerInfo').textContent = 
-              `(${type} - ${count}人) 於${location}進行${content}`;
+              `(${worker.type} - ${workerCount}人) 於${worker.location}進行${worker.content}`;
           const recentAddition = document.getElementById('recentAddition');
           recentAddition.style.display = 'block';
           
