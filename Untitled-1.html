@@ -137,7 +137,7 @@
                 <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#clearDataModal">
                     <i class="bi bi-trash me-2"></i>清空資料
                 </button>
-                <button type="button" class="btn btn-success" id="uploadBtn" onclick="uploadToGoogleSheet()">
+                <button type="button" class="btn btn-success" id="uploadBtn" onclick="uploadData()">
                     <i class="bi bi-cloud-arrow-up me-2"></i>上傳資料
                 </button>
             </div>
@@ -197,6 +197,11 @@
         </div>
     </div>
 
+    <!-- 隱藏的表單和iframe用於提交 -->
+    <div style="display:none;">
+        <iframe name="hidden-iframe" id="hidden-iframe"></iframe>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <!-- 自定義 JS -->
@@ -223,6 +228,11 @@
             
             // 更新工人表格
             updateWorkerTable();
+            
+            // 設置iframe的load事件
+            document.getElementById('hidden-iframe').onload = function() {
+                handleUploadResponse();
+            };
         });
         
         // 設置預設進場時間
@@ -358,8 +368,8 @@
             showToast('已清空所有資料');
         }
         
-        // 上傳資料到 Google Sheet (使用 GET 方法)
-        function uploadToGoogleSheet() {
+        // 上傳資料到 Google Sheet (使用表單提交方式)
+        function uploadData() {
             // 檢查是否有資料
             if (workers.length === 0) {
                 showToast('沒有資料可上傳', 'danger');
@@ -371,18 +381,48 @@
             uploadBtn.disabled = true;
             uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>上傳中...';
             
-            // 準備上傳資料
-            const data = JSON.stringify(workers);
+            // 創建一個臨時表單
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = SCRIPT_URL;
+            form.target = 'hidden-iframe';
+            form.style.display = 'none';
             
-            // 使用 GET 方法發送請求到 Google Apps Script
-            // 由於 GET 請求有 URL 長度限制，需要確保資料不會太大
-            // 一般來說，幾十條記錄應該沒問題
-            const url = `${SCRIPT_URL}?data=${encodeURIComponent(data)}`;
+            // 添加資料欄位
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'data';
+            input.value = JSON.stringify(workers);
+            form.appendChild(input);
             
-            fetch(url)
-            .then(response => response.json())
-            .then(result => {
-                console.log('上傳結果:', result);
+            // 添加到文檔並提交
+            document.body.appendChild(form);
+            form.submit();
+            
+            // 提交後移除表單
+            setTimeout(() => {
+                document.body.removeChild(form);
+            }, 1000);
+        }
+        
+        // 處理上傳響應
+        function handleUploadResponse() {
+            try {
+                // 獲取iframe的內容
+                const iframe = document.getElementById('hidden-iframe');
+                const iframeContent = iframe.contentDocument || iframe.contentWindow.document;
+                const responseText = iframeContent.body.innerText || iframeContent.body.textContent;
+                
+                console.log('上傳響應:', responseText);
+                
+                // 嘗試解析JSON響應
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (e) {
+                    // 如果不是JSON，則使用文本響應
+                    result = { result: 'error', message: responseText || '伺服器未返回有效響應' };
+                }
                 
                 // 顯示結果
                 let resultHtml = '';
@@ -391,10 +431,10 @@
                     resultHtml = `
                         <div class="alert alert-success">
                             <i class="bi bi-check-circle-fill me-2"></i>
-                            ${result.message}
+                            ${result.message || '上傳成功'}
                         </div>
-                        <p>上傳日期: ${result.details.date}</p>
-                        <p>資料筆數: ${result.details.count}</p>
+                        <p>上傳時間: ${new Date().toLocaleString()}</p>
+                        <p>資料筆數: ${workers.length}</p>
                     `;
                     
                     // 清空本地資料
@@ -407,7 +447,7 @@
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
                             上傳失敗
                         </div>
-                        <p>錯誤訊息: ${result.message}</p>
+                        <p>錯誤訊息: ${result.message || '未知錯誤'}</p>
                     `;
                 }
                 
@@ -416,15 +456,14 @@
                 // 顯示結果 Modal
                 const resultModal = new bootstrap.Modal(document.getElementById('uploadResultModal'));
                 resultModal.show();
-            })
-            .catch(error => {
-                console.error('上傳時發生錯誤:', error);
+            } catch (error) {
+                console.error('處理上傳響應時發生錯誤:', error);
                 
                 // 顯示錯誤
                 document.getElementById('uploadResultBody').innerHTML = `
                     <div class="alert alert-danger">
                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        上傳時發生錯誤
+                        處理響應時發生錯誤
                     </div>
                     <p>錯誤訊息: ${error.message}</p>
                 `;
@@ -432,12 +471,12 @@
                 // 顯示結果 Modal
                 const resultModal = new bootstrap.Modal(document.getElementById('uploadResultModal'));
                 resultModal.show();
-            })
-            .finally(() => {
+            } finally {
                 // 恢復上傳按鈕
+                const uploadBtn = document.getElementById('uploadBtn');
                 uploadBtn.disabled = false;
                 uploadBtn.innerHTML = '<i class="bi bi-cloud-arrow-up me-2"></i>上傳資料';
-            });
+            }
         }
         
         // 顯示 Toast 通知
