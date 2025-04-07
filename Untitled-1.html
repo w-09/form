@@ -18,6 +18,12 @@
         .table th {
             background-color: #f8f9fa;
         }
+        .toast-container {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            z-index: 1050;
+        }
     </style>
 </head>
 <body>
@@ -96,7 +102,7 @@
                 <h5 class="card-title mb-0">
                     <i class="bi bi-list-ul me-2"></i>人員列表
                 </h5>
-                <span class="badge bg-primary" id="workerCount">0</span>
+                <span class="badge bg-primary" id="workerCountBadge">0</span>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -178,12 +184,28 @@
         </div>
     </div>
 
+    <!-- Toast 通知 -->
+    <div class="toast-container">
+        <div class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" id="toastNotification">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <span id="toastMessage"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <!-- 自定義 JS -->
     <script>
         // 全局變數
         let workers = [];
+        
+        // Google Apps Script 部署網址
+        const SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
         
         // 頁面載入時執行
         document.addEventListener('DOMContentLoaded', function() {
@@ -244,4 +266,197 @@
         
         // 更新工人表格
         function updateWorkerTable() {
-            const tbod
+            const tbody = document.querySelector('#workerTable tbody');
+            const emptyState = document.getElementById('emptyState');
+            const workerCountBadge = document.getElementById('workerCountBadge');
+            
+            // 清空表格
+            tbody.innerHTML = '';
+            
+            // 更新計數
+            workerCountBadge.textContent = workers.length;
+            
+            // 如果沒有資料，顯示空狀態
+            if (workers.length === 0) {
+                emptyState.classList.remove('d-none');
+                return;
+            }
+            
+            // 隱藏空狀態
+            emptyState.classList.add('d-none');
+            
+            // 填充表格
+            workers.forEach((worker, index) => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${worker.type}</td>
+                    <td>${worker.count}</td>
+                    <td>${worker.location}</td>
+                    <td>${worker.content}</td>
+                    <td>${worker.entryTime}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeWorker(${index})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        // 移除工人
+        function removeWorker(index) {
+            // 從陣列中移除
+            workers.splice(index, 1);
+            
+            // 更新表格
+            updateWorkerTable();
+            
+            // 保存到 localStorage
+            saveWorkersToLocalStorage();
+            
+            // 顯示提示
+            showToast('已移除');
+        }
+        
+        // 保存資料到 localStorage
+        function saveWorkersToLocalStorage() {
+            localStorage.setItem('workers', JSON.stringify(workers));
+        }
+        
+        // 從 localStorage 載入資料
+        function loadWorkersFromLocalStorage() {
+            const savedData = localStorage.getItem('workers');
+            if (savedData) {
+                try {
+                    workers = JSON.parse(savedData);
+                } catch (e) {
+                    console.error('解析本地存儲資料時發生錯誤:', e);
+                    workers = [];
+                }
+            }
+        }
+        
+        // 清空所有資料
+        function clearAllData() {
+            // 清空陣列
+            workers = [];
+            
+            // 更新表格
+            updateWorkerTable();
+            
+            // 清除 localStorage
+            localStorage.removeItem('workers');
+            
+            // 關閉 Modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('clearDataModal'));
+            modal.hide();
+            
+            // 顯示提示
+            showToast('已清空所有資料');
+        }
+        
+        // 上傳資料到 Google Sheet
+        function uploadToGoogleSheet() {
+            // 檢查是否有資料
+            if (workers.length === 0) {
+                showToast('沒有資料可上傳', 'danger');
+                return;
+            }
+            
+            // 禁用上傳按鈕
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>上傳中...';
+            
+            // 準備上傳資料
+            const data = JSON.stringify(workers);
+            
+            // 發送請求到 Google Apps Script
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: data,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('上傳結果:', result);
+                
+                // 顯示結果
+                let resultHtml = '';
+                
+                if (result.result === 'success') {
+                    resultHtml = `
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            ${result.message}
+                        </div>
+                        <p>上傳日期: ${result.details.date}</p>
+                        <p>資料筆數: ${result.details.count}</p>
+                    `;
+                    
+                    // 清空本地資料
+                    workers = [];
+                    updateWorkerTable();
+                    localStorage.removeItem('workers');
+                } else {
+                    resultHtml = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            上傳失敗
+                        </div>
+                        <p>錯誤訊息: ${result.message}</p>
+                    `;
+                }
+                
+                document.getElementById('uploadResultBody').innerHTML = resultHtml;
+                
+                // 顯示結果 Modal
+                const resultModal = new bootstrap.Modal(document.getElementById('uploadResultModal'));
+                resultModal.show();
+            })
+            .catch(error => {
+                console.error('上傳時發生錯誤:', error);
+                
+                // 顯示錯誤
+                document.getElementById('uploadResultBody').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        上傳時發生錯誤
+                    </div>
+                    <p>錯誤訊息: ${error.message}</p>
+                `;
+                
+                // 顯示結果 Modal
+                const resultModal = new bootstrap.Modal(document.getElementById('uploadResultModal'));
+                resultModal.show();
+            })
+            .finally(() => {
+                // 恢復上傳按鈕
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = '<i class="bi bi-cloud-arrow-up me-2"></i>上傳資料';
+            });
+        }
+        
+        // 顯示 Toast 通知
+        function showToast(message, type = 'success') {
+            const toastEl = document.getElementById('toastNotification');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            // 設置訊息
+            toastMessage.textContent = message;
+            
+            // 設置類型
+            toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+            
+            // 建立 Toast 實例並顯示
+            const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+            toast.show();
+        }
+    </script>
+</body>
+</html>
