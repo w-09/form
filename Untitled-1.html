@@ -358,7 +358,7 @@
             showToast('已清空所有資料');
         }
         
-        // 上傳資料到 Google Sheet
+        // 上傳資料到 Google Sheet (使用 GET 方法)
         function uploadToGoogleSheet() {
             // 檢查是否有資料
             if (workers.length === 0) {
@@ -374,14 +374,12 @@
             // 準備上傳資料
             const data = JSON.stringify(workers);
             
-            // 發送請求到 Google Apps Script
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: data,
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
+            // 使用 GET 方法發送請求到 Google Apps Script
+            // 由於 GET 請求有 URL 長度限制，需要確保資料不會太大
+            // 一般來說，幾十條記錄應該沒問題
+            const url = `${SCRIPT_URL}?data=${encodeURIComponent(data)}`;
+            
+            fetch(url)
             .then(response => response.json())
             .then(result => {
                 console.log('上傳結果:', result);
