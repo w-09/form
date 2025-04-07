@@ -207,7 +207,7 @@
     <!-- 自定義 JS -->
     <script>
         // 全局變數
-        let workers = [];
+        var workers = [];
         
         // Google Apps Script 部署網址
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzk_JkmX3AtUCXVeoTLXq6yr6SEJ3ooVqUDrcb2qKAimRg9t5LXK7WAH0V3C2FkMtGYQQ/exec';
@@ -257,7 +257,8 @@
                 count: workerCount,
                 location: workLocation,
                 content: workContent,
-                entryTime: entryTime
+                entryTime: entryTime,
+                date: new Date().toISOString().split('T')[0] // 添加日期
             });
             
             // 更新表格
@@ -368,7 +369,7 @@
             showToast('已清空所有資料');
         }
         
-        // 上傳資料到 Google Sheet (使用表單提交方式)
+        // 上傳資料到 Google Sheet
         function uploadData() {
             // 檢查是否有資料
             if (workers.length === 0) {
@@ -381,38 +382,16 @@
             uploadBtn.disabled = true;
             uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>上傳中...';
             
-            // 創建一個臨時表單
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = SCRIPT_URL;
-            form.target = 'hidden-iframe';
-            form.style.display = 'none';
-            
-            // 添加資料欄位
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'data';
-            input.value = JSON.stringify(workers);
-            form.appendChild(input);
-            
-            // 添加到文檔並提交
-            document.body.appendChild(form);
-            form.submit();
-            
-            // 提交後移除表單
-            setTimeout(() => {
-                document.body.removeChild(form);
-            }, 1000);
-        }
-        
-        // 處理上傳響應
-        function handleUploadResponse() {
-            try {
-                // 獲取iframe的內容
-                const iframe = document.getElementById('hidden-iframe');
-                const iframeContent = iframe.contentDocument || iframe.contentWindow.document;
-                const responseText = iframeContent.body.innerText || iframeContent.body.textContent;
-                
+            // 使用 fetch API 替代表單提交
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `data=${encodeURIComponent(JSON.stringify(workers))}`
+            })
+            .then(response => response.text())
+            .then(responseText => {
                 console.log('上傳響應:', responseText);
                 
                 // 嘗試解析JSON響應
@@ -456,14 +435,15 @@
                 // 顯示結果 Modal
                 const resultModal = new bootstrap.Modal(document.getElementById('uploadResultModal'));
                 resultModal.show();
-            } catch (error) {
-                console.error('處理上傳響應時發生錯誤:', error);
+            })
+            .catch(error => {
+                console.error('上傳時發生錯誤:', error);
                 
                 // 顯示錯誤
                 document.getElementById('uploadResultBody').innerHTML = `
                     <div class="alert alert-danger">
                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        處理響應時發生錯誤
+                        上傳時發生錯誤
                     </div>
                     <p>錯誤訊息: ${error.message}</p>
                 `;
@@ -471,12 +451,13 @@
                 // 顯示結果 Modal
                 const resultModal = new bootstrap.Modal(document.getElementById('uploadResultModal'));
                 resultModal.show();
-            } finally {
+            })
+            .finally(() => {
                 // 恢復上傳按鈕
                 const uploadBtn = document.getElementById('uploadBtn');
                 uploadBtn.disabled = false;
                 uploadBtn.innerHTML = '<i class="bi bi-cloud-arrow-up me-2"></i>上傳資料';
-            }
+            });
         }
         
         // 顯示 Toast 通知
