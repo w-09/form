@@ -123,7 +123,7 @@
                                 <th>人數</th>
                                 <th>位置</th>
                                 <th>工作內容</th>
-                                <th>進場時間</th>
+                                <th>進場日期</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
@@ -224,8 +224,8 @@
         
         // 頁面載入時執行
         document.addEventListener('DOMContentLoaded', function() {
-            // 設置當前時間為預設進場時間
-            setDefaultEntryTime();
+            // 設置當前日期為預設進場日期
+            setDefaultEntryDate();
             
             // 註冊表單提交事件
             document.getElementById('workerForm').addEventListener('submit', function(e) {
@@ -245,12 +245,13 @@
             };
         });
         
-        // 設置預設進場時間
-        function setDefaultEntryTime() {
+        // 設置預設進場日期
+        function setDefaultEntryDate() {
             const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            document.getElementById('entryTime').value = `${hours}:${minutes}`;
+            const year = now.getFullYear();
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const day = now.getDate().toString().padStart(2, '0');
+            document.getElementById('entryDate').value = `${year}-${month}-${day}`;
         }
         
         // 添加工人
@@ -259,7 +260,7 @@
             const workerCount = parseInt(document.getElementById('workerCount').value);
             const workLocation = document.getElementById('workLocation').value;
             const workContent = document.getElementById('workContent').value;
-            const entryTime = document.getElementById('entryTime').value;
+            const entryDate = document.getElementById('entryDate').value;
             
             // 添加到工人列表
             workers.push({
@@ -267,8 +268,8 @@
                 count: workerCount,
                 location: workLocation,
                 content: workContent,
-                entryTime: entryTime,
-                date: new Date().toISOString().split('T')[0] // 添加日期
+                entryDate: entryDate,
+                recordDate: new Date().toISOString().split('T')[0] // 添加記錄日期
             });
             
             // 更新表格
@@ -279,7 +280,7 @@
             
             // 重置表單
             document.getElementById('workerForm').reset();
-            setDefaultEntryTime();
+            setDefaultEntryDate();
             
             // 顯示成功提示
             showToast('新增成功');
@@ -315,7 +316,7 @@
                     <td>${worker.count}</td>
                     <td>${worker.location}</td>
                     <td>${worker.content}</td>
-                    <td>${worker.entryTime}</td>
+                    <td>${worker.entryDate}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-danger" onclick="removeWorker(${index})">
                             <i class="bi bi-trash"></i>
