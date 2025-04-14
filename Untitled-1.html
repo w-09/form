@@ -260,7 +260,10 @@
             const workerCount = parseInt(document.getElementById('workerCount').value);
             const workLocation = document.getElementById('workLocation').value;
             const workContent = document.getElementById('workContent').value;
-            const entryDate = document.getElementById('entryDate').value;
+            
+            // 獲取日期並轉換格式從 YYYY-MM-DD 到 YYYY/MM/DD
+            const rawEntryDate = document.getElementById('entryDate').value;
+            const entryDate = rawEntryDate.replace(/-/g, '/');
             
             // 添加到工人列表
             workers.push({
@@ -268,8 +271,8 @@
                 count: workerCount,
                 location: workLocation,
                 content: workContent,
-                entryDate: entryDate,
-                recordDate: new Date().toISOString().split('T')[0] // 添加記錄日期
+                entryDate: entryDate,  // 已轉換格式的日期
+                entryTime: '08:00'  // 添加預設進場時間
             });
             
             // 更新表格
@@ -311,12 +314,15 @@
             workers.forEach((worker, index) => {
                 const row = document.createElement('tr');
                 
+                // 顯示日期，可能需要從 YYYY/MM/DD 轉回 YYYY-MM-DD 以便於用戶識別
+                const displayDate = worker.entryDate || '';
+                
                 row.innerHTML = `
                     <td>${worker.type}</td>
                     <td>${worker.count}</td>
                     <td>${worker.location}</td>
                     <td>${worker.content}</td>
-                    <td>${worker.entryDate}</td>
+                    <td>${displayDate}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-danger" onclick="removeWorker(${index})">
                             <i class="bi bi-trash"></i>
@@ -354,6 +360,14 @@
             if (savedData) {
                 try {
                     workers = JSON.parse(savedData);
+                    
+                    // 確保所有已載入的工人資料都有正確格式的進場日期
+                    workers.forEach(worker => {
+                        if (worker.entryDate && worker.entryDate.includes('-')) {
+                            worker.entryDate = worker.entryDate.replace(/-/g, '/');
+                        }
+                    });
+                    
                 } catch (e) {
                     console.error('解析本地存儲資料時發生錯誤:', e);
                     workers = [];
