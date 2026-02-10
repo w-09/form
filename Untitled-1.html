@@ -1,514 +1,634 @@
 <!DOCTYPE html>
 <html lang="zh-Hant-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>南一處-亞灣工地人員進場登記系統</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
-        body {
-            padding-bottom: 70px;
-        }
-        .form-label {
-            font-weight: bold;
-        }
-        .table th {
-            background-color: #f8f9fa;
-        }
-        .toast-container {
-            position: fixed;
-            bottom: 80px;
-            right: 20px;
-            z-index: 1050;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>南一處-亞灣工地人員進場登記系統</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <style>
+      body {
+          padding-bottom: 70px;
+      }
+      .form-label {
+          font-weight: bold;
+      }
+      .table th {
+          background-color: #f8f9fa;
+      }
+      .toast-container {
+          position: fixed;
+          bottom: 80px;
+          right: 20px;
+          z-index: 1050;
+      }
+      .guard-verification-screen {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 40px 20px;
+          border-radius: 15px;
+          text-align: center;
+      }
+      .guard-verification-screen h3 {
+          font-size: 2rem;
+          margin-bottom: 20px;
+          font-weight: bold;
+      }
+      .guard-verification-screen .info-box {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 10px;
+          padding: 20px;
+          margin: 20px 0;
+          backdrop-filter: blur(10px);
+      }
+      .password-input-group {
+          max-width: 300px;
+          margin: 30px auto;
+      }
+      .password-input-group input {
+          font-size: 1.5rem;
+          text-align: center;
+          letter-spacing: 5px;
+      }
+      .guard-icon {
+          font-size: 5rem;
+          margin-bottom: 20px;
+          animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+      }
+  </style>
 </head>
 <body>
-    <!-- 頂部導航欄 -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <i class="bi bi-building me-2"></i>南一處-亞灣工地人員進場登記系統
-            </a>
-        </div>
-    </nav>
+  <!-- 頂部導航欄 -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+      <div class="container-fluid">
+          <a class="navbar-brand" href="#">
+              <i class="bi bi-building me-2"></i>南一處-亞灣工地人員進場登記系統
+          </a>
+      </div>
+  </nav>
 
-    <!-- 主要內容 -->
-    <div class="container mt-4">
-        <!-- 登記表單 -->
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-light">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-person-plus me-2"></i>新增人員
-                </h5>
-            </div>
-            <div class="card-body">
-                <form id="workerForm">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="workerType" class="form-label">工種</label>
-                            <input type="text" class="form-control" id="workerType" required list="workerTypeList">
-                            <datalist id="workerTypeList">
-                                <option value="鋼筋工-品鋆">
-                                <option value="模板工-初遠">
-                                <option value="水電工(永青)-旭鋐">
-                                <option value="泥作工-玖太">
-                                <option value="泥作工-華三">
-                                <option value="移工(永青)">
-                                <option value="油漆工-貝展">
-                                <option value="防水工/粉光標高器工-寶鴻">
-                                <option value="隔間工-六奕">
-                                <option value="搗築工-承叡">
-                                <option value="鷹架工-鼎如">
-                                <option value="雄菱工程人員">
-                                <option value="消防工(雄菱)">
-                                <option value="水電工(雄菱)">
-                                <option value="電氣工(雄菱)">
-                                <option value="移工(雄菱)">
-                                <option value="施工電梯操作手-與泰興">
-                                <option value="塔吊操作手-漢金">
-                                <option value="捲門/鐵工-翔越">   
-                                <option value="鋁門窗-同安">
-                                <option value="防火門-燦通">
-                                <option value="石材工-圓瓏">
-                                <option value="保麗龍混凝土-潤豐">   
-                            </datalist>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="workerCount" class="form-label">人數</label>
-                            <input type="number" class="form-control" id="workerCount" min="1" value="1" required>
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="workLocation" class="form-label">位置</label>
-                            <input type="text" class="form-control" id="workLocation" required list="locationList">
-                            <datalist id="locationList">
-                                <option value="A棟">
-                                <option value="B棟">
-                                <option value="C棟">
-                                <option value="地下室">
-                                <option value="公共區域">
-                            </datalist>
-                        </div>
-                        <div class="col-md-6">
-                           <label for="entryDate" class="form-label">進場日期</label>
-                           <input type="date" class="form-control" id="entryDate" required>
-                     </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="workContent" class="form-label">工作內容</label>
-                        <textarea class="form-control" id="workContent" rows="2" required></textarea>
-                    </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-plus-circle me-2"></i>新增
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+  <!-- 主要內容 -->
+  <div class="container mt-4">
+      <!-- 登記表單 -->
+      <div class="card mb-4 shadow-sm">
+          <div class="card-header bg-light">
+              <h5 class="card-title mb-0">
+                  <i class="bi bi-person-plus me-2"></i>新增人員
+              </h5>
+          </div>
+          <div class="card-body">
+              <form id="workerForm">
+                  <div class="row mb-3">
+                      <div class="col-md-6">
+                          <label for="workerType" class="form-label">工種</label>
+                          <input type="text" class="form-control" id="workerType" required list="workerTypeList">
+                          <datalist id="workerTypeList">
+                              <option value="鋼筋工-品鋆">
+                              <option value="模板工-初遠">
+                              <option value="水電工(永青)-旭鋐">
+                              <option value="泥作工-玖太">
+                              <option value="泥作工-華三">
+                              <option value="移工(永青)">
+                              <option value="油漆工-貝展">
+                              <option value="防水工/粉光標高器工-寶鴻">
+                              <option value="隔間工-六奕">
+                              <option value="搗築工-承叡">
+                              <option value="鷹架工-鼎如">
+                              <option value="雄菱工程人員">
+                              <option value="消防工(雄菱)">
+                              <option value="水電工(雄菱)">
+                              <option value="電氣工(雄菱)">
+                              <option value="移工(雄菱)">
+                              <option value="施工電梯操作手-與泰興">
+                              <option value="塔吊操作手-漢金">
+                              <option value="捲門/鐵工-翔越">   
+                              <option value="鋁門窗-同安">
+                              <option value="防火門-燦通">
+                              <option value="石材工-圓瓏">
+                              <option value="保麗龍混凝土-潤豐">   
+                          </datalist>
+                      </div>
+                      <div class="col-md-6">
+                          <label for="workerCount" class="form-label">人數</label>
+                          <input type="number" class="form-control" id="workerCount" min="1" value="1" required>
+                      </div>
+                  </div>
+                  <div class="row mb-3">
+                      <div class="col-md-6">
+                          <label for="workLocation" class="form-label">位置</label>
+                          <input type="text" class="form-control" id="workLocation" required list="locationList">
+                          <datalist id="locationList">
+                              <option value="A棟">
+                              <option value="B棟">
+                              <option value="C棟">
+                              <option value="地下室">
+                              <option value="公共區域">
+                          </datalist>
+                      </div>
+                      <div class="col-md-6">
+                         <label for="entryDate" class="form-label">進場日期</label>
+                         <input type="date" class="form-control" id="entryDate" required>
+                   </div>
+                  </div>
+                  <div class="mb-3">
+                      <label for="workContent" class="form-label">工作內容</label>
+                      <textarea class="form-control" id="workContent" rows="2" required></textarea>
+                  </div>
+                  <div class="d-grid">
+                      <button type="submit" class="btn btn-primary">
+                          <i class="bi bi-plus-circle me-2"></i>新增
+                      </button>
+                  </div>
+              </form>
+          </div>
+      </div>
 
-        <!-- 人員列表 -->
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-list-ul me-2"></i>人員列表
-                </h5>
-                <span class="badge bg-primary" id="workerCountBadge">0</span>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0" id="workerTable">
-                        <thead>
-                            <tr>
-                                <th>工種</th>
-                                <th>人數</th>
-                                <th>位置</th>
-                                <th>工作內容</th>
-                                <th>進場日期</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- 資料將由 JavaScript 動態填充 -->
-                        </tbody>
-                    </table>
-                </div>
-                <div class="text-center py-3 d-none" id="emptyState">
-                    <i class="bi bi-inbox text-muted" style="font-size: 2rem;"></i>
-                    <p class="text-muted mt-2">尚無人員資料</p>
-                </div>
-            </div>
-        </div>
-    </div>
+      <!-- 人員列表 -->
+      <div class="card mb-4 shadow-sm">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+              <h5 class="card-title mb-0">
+                  <i class="bi bi-list-ul me-2"></i>人員列表
+              </h5>
+              <span class="badge bg-primary" id="workerCountBadge">0</span>
+          </div>
+          <div class="card-body p-0">
+              <div class="table-responsive">
+                  <table class="table table-hover table-striped mb-0" id="workerTable">
+                      <thead>
+                          <tr>
+                              <th>工種</th>
+                              <th>人數</th>
+                              <th>位置</th>
+                              <th>工作內容</th>
+                              <th>進場日期</th>
+                              <th>操作</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          <!-- 資料將由 JavaScript 動態填充 -->
+                      </tbody>
+                  </table>
+              </div>
+              <div class="text-center py-3 d-none" id="emptyState">
+                  <i class="bi bi-inbox text-muted" style="font-size: 2rem;"></i>
+                  <p class="text-muted mt-2">尚無人員資料</p>
+              </div>
+          </div>
+      </div>
+  </div>
 
-    <!-- 底部固定工具欄 -->
-    <nav class="navbar fixed-bottom bg-light">
-        <div class="container-fluid">
-            <div class="btn-group w-100" role="group">
-                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#clearDataModal">
-                    <i class="bi bi-trash me-2"></i>清空資料
-                </button>
-                <button type="button" class="btn btn-success" id="uploadBtn" onclick="uploadData()">
-                    <i class="bi bi-cloud-arrow-up me-2"></i>上傳資料
-                </button>
-            </div>
-        </div>
-    </nav>
+  <!-- 底部固定工具欄 -->
+  <nav class="navbar fixed-bottom bg-light">
+      <div class="container-fluid">
+          <div class="btn-group w-100" role="group">
+              <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#clearDataModal">
+                  <i class="bi bi-trash me-2"></i>清空資料
+              </button>
+              <button type="button" class="btn btn-success" id="uploadBtn" onclick="uploadData()">
+                  <i class="bi bi-cloud-arrow-up me-2"></i>上傳資料
+              </button>
+          </div>
+      </div>
+  </nav>
 
-    <!-- 清空資料確認 Modal -->
-    <div class="modal fade" id="clearDataModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">確認清空</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        確定要清空所有資料嗎？此操作無法復原。
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-danger" onclick="clearAllData()">確認清空</button>
-                </div>
-            </div>
-        </div>
-    </div>
+  <!-- 清空資料確認 Modal -->
+  <div class="modal fade" id="clearDataModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title">確認清空</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                  <div class="alert alert-warning">
+                      <i class="bi bi-exclamation-triangle me-2"></i>
+                      確定要清空所有資料嗎？此操作無法復原。
+                  </div>
+              </div>
+              <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                  <button type="button" class="btn btn-danger" onclick="clearAllData()">確認清空</button>
+              </div>
+          </div>
+      </div>
+  </div>
 
-    <!-- 上傳結果 Modal -->
-    <div class="modal fade" id="uploadResultModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">上傳結果</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" id="uploadResultBody">
-                    <!-- 內容將由 JavaScript 動態填充 -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
-                </div>
-            </div>
-        </div>
-    </div>
+  <!-- 警衛確認 Modal -->
+  <div class="modal fade" id="guardVerificationModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+          <div class="modal-content border-0">
+              <div class="modal-body p-0">
+                  <div class="guard-verification-screen">
+                      <i class="bi bi-shield-check guard-icon"></i>
+                      <h3>✅ 已完成回報</h3>
+                      
+                      <div class="info-box">
+                          <h5><i class="bi bi-clock-history me-2"></i>上傳時間</h5>
+                          <p class="fs-5 mb-0" id="uploadTime"></p>
+                      </div>
+                      
+                      <div class="info-box">
+                          <h5><i class="bi bi-people-fill me-2"></i>上傳筆數</h5>
+                          <p class="fs-5 mb-0" id="uploadCount"></p>
+                      </div>
+                      
+                      <div class="alert alert-light mt-4 mb-3">
+                          <i class="bi bi-info-circle me-2"></i>
+                          <strong>請將此畫面供警衛檢視</strong>
+                      </div>
+                      
+                      <div class="password-input-group">
+                          <label class="form-label text-white fs-5 mb-3">
+                              <i class="bi bi-key-fill me-2"></i>請輸入警衛密碼
+                          </label>
+                          <input type="password" 
+                                 class="form-control form-control-lg" 
+                                 id="guardPassword" 
+                                 placeholder="••••"
+                                 maxlength="4">
+                          <div class="invalid-feedback d-block" id="passwordError" style="display:none !important;">
+                              密碼錯誤，請重新輸入
+                          </div>
+                      </div>
+                      
+                      <button type="button" 
+                              class="btn btn-light btn-lg px-5" 
+                              onclick="verifyGuardPassword()">
+                          <i class="bi bi-check-circle me-2"></i>確認
+                      </button>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </div>
 
-    <!-- Toast 通知 -->
-    <div class="toast-container">
-        <div class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" id="toastNotification">
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="bi bi-check-circle me-2"></i>
-                    <span id="toastMessage"></span>
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        </div>
-    </div>
+  <!-- 上傳失敗結果 Modal -->
+  <div class="modal fade" id="uploadResultModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title">上傳結果</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body" id="uploadResultBody">
+                  <!-- 內容將由 JavaScript 動態填充 -->
+              </div>
+              <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+              </div>
+          </div>
+      </div>
+  </div>
 
-    <!-- 隱藏的表單和iframe用於提交 -->
-    <div style="display:none;">
-        <iframe name="hidden-iframe" id="hidden-iframe"></iframe>
-    </div>
+  <!-- Toast 通知 -->
+  <div class="toast-container">
+      <div class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" id="toastNotification">
+          <div class="d-flex">
+              <div class="toast-body">
+                  <i class="bi bi-check-circle me-2"></i>
+                  <span id="toastMessage"></span>
+              </div>
+              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+      </div>
+  </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- 自定義 JS -->
-    <script>
-        // 全局變數
-        var workers = [];
-        
-        // Google Apps Script 部署網址
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwq5w64urgNPv5I_3raX16BNc8L9dYkKZv0TcyxOw_Fm6d0vFG7usorT4y5CT_IWJe0/exec';
-        
-        // 頁面載入時執行
-        document.addEventListener('DOMContentLoaded', function() {
-            // 設置當前日期為預設進場日期
-            setDefaultEntryDate();
-            
-            // 註冊表單提交事件
-            document.getElementById('workerForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                addWorker();
-            });
-            
-            // 從 localStorage 載入資料
-            loadWorkersFromLocalStorage();
-            
-            // 更新工人表格
-            updateWorkerTable();
-            
-            // 設置iframe的load事件
-            document.getElementById('hidden-iframe').onload = function() {
-                handleUploadResponse();
-            };
-        });
-        
-        // 設置預設進場日期
-        function setDefaultEntryDate() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            const day = now.getDate().toString().padStart(2, '0');
-            document.getElementById('entryDate').value = `${year}-${month}-${day}`;
-        }
-        
-        // 添加工人
-        function addWorker() {
-            const workerType = document.getElementById('workerType').value;
-            const workerCount = parseInt(document.getElementById('workerCount').value);
-            const workLocation = document.getElementById('workLocation').value;
-            const workContent = document.getElementById('workContent').value;
-            
-            // 獲取日期並轉換格式從 YYYY-MM-DD 到 YYYY/MM/DD
-            const rawEntryDate = document.getElementById('entryDate').value;
-            const entryDate = rawEntryDate.replace(/-/g, '/');
-            
-            // 添加到工人列表
-            workers.push({
-                type: workerType,
-                count: workerCount,
-                location: workLocation,
-                content: workContent,
-                entryDate: entryDate,  // 已轉換格式的日期
-                entryTime: '08:00'  // 添加預設進場時間
-            });
-            
-            // 更新表格
-            updateWorkerTable();
-            
-            // 保存到 localStorage
-            saveWorkersToLocalStorage();
-            
-            // 重置表單
-            document.getElementById('workerForm').reset();
-            setDefaultEntryDate();
-            
-            // 顯示成功提示
-            showToast('新增成功');
-        }
-        
-        // 更新工人表格
-        function updateWorkerTable() {
-            const tbody = document.querySelector('#workerTable tbody');
-            const emptyState = document.getElementById('emptyState');
-            const workerCountBadge = document.getElementById('workerCountBadge');
-            
-            // 清空表格
-            tbody.innerHTML = '';
-            
-            // 更新計數
-            workerCountBadge.textContent = workers.length;
-            
-            // 如果沒有資料，顯示空狀態
-            if (workers.length === 0) {
-                emptyState.classList.remove('d-none');
-                return;
-            }
-            
-            // 隱藏空狀態
-            emptyState.classList.add('d-none');
-            
-            // 填充表格
-            workers.forEach((worker, index) => {
-                const row = document.createElement('tr');
-                
-                // 顯示日期，可能需要從 YYYY/MM/DD 轉回 YYYY-MM-DD 以便於用戶識別
-                const displayDate = worker.entryDate || '';
-                
-                row.innerHTML = `
-                    <td>${worker.type}</td>
-                    <td>${worker.count}</td>
-                    <td>${worker.location}</td>
-                    <td>${worker.content}</td>
-                    <td>${displayDate}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-danger" onclick="removeWorker(${index})">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
-                `;
-                
-                tbody.appendChild(row);
-            });
-        }
-        
-        // 移除工人
-        function removeWorker(index) {
-            // 從陣列中移除
-            workers.splice(index, 1);
-            
-            // 更新表格
-            updateWorkerTable();
-            
-            // 保存到 localStorage
-            saveWorkersToLocalStorage();
-            
-            // 顯示提示
-            showToast('已移除');
-        }
-        
-        // 保存資料到 localStorage
-        function saveWorkersToLocalStorage() {
-            localStorage.setItem('workers', JSON.stringify(workers));
-        }
-        
-        // 從 localStorage 載入資料
-        function loadWorkersFromLocalStorage() {
-            const savedData = localStorage.getItem('workers');
-            if (savedData) {
-                try {
-                    workers = JSON.parse(savedData);
-                    
-                    // 確保所有已載入的工人資料都有正確格式的進場日期
-                    workers.forEach(worker => {
-                        if (worker.entryDate && worker.entryDate.includes('-')) {
-                            worker.entryDate = worker.entryDate.replace(/-/g, '/');
-                        }
-                    });
-                    
-                } catch (e) {
-                    console.error('解析本地存儲資料時發生錯誤:', e);
-                    workers = [];
-                }
-            }
-        }
-        
-        // 清空所有資料
-        function clearAllData() {
-            // 清空陣列
-            workers = [];
-            
-            // 更新表格
-            updateWorkerTable();
-            
-            // 清除 localStorage
-            localStorage.removeItem('workers');
-            
-            // 關閉 Modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('clearDataModal'));
-            modal.hide();
-            
-            // 顯示提示
-            showToast('已清空所有資料');
-        }
-        
-        // 上傳資料到 Google Sheet
-        function uploadData() {
-            // 檢查是否有資料
-            if (workers.length === 0) {
-                showToast('沒有資料可上傳', 'danger');
-                return;
-            }
-            
-            // 禁用上傳按鈕
-            const uploadBtn = document.getElementById('uploadBtn');
-            uploadBtn.disabled = true;
-            uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>上傳中...';
-            
-            // 使用 fetch API 替代表單提交
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `data=${encodeURIComponent(JSON.stringify(workers))}`
-            })
-            .then(response => response.text())
-            .then(responseText => {
-                console.log('上傳響應:', responseText);
-                
-                // 嘗試解析JSON響應
-                let result;
-                try {
-                    result = JSON.parse(responseText);
-                } catch (e) {
-                    // 如果不是JSON，則使用文本響應
-                    result = { result: 'error', message: responseText || '伺服器未返回有效響應' };
-                }
-                
-                // 顯示結果
-                let resultHtml = '';
-                
-                if (result.result === 'success') {
-                    resultHtml = `
-                        <div class="alert alert-success">
-                            <i class="bi bi-check-circle-fill me-2"></i>
-                            ${result.message || '上傳成功，請顯示畫面交警衛備查'}
-                        </div>
-                        <p>上傳時間: ${new Date().toLocaleString()}</p>
-                        <p>資料筆數: ${workers.length}</p>
-                    `;
-                    
-                    // 清空本地資料
-                    workers = [];
-                    updateWorkerTable();
-                    localStorage.removeItem('workers');
-                } else {
-                    resultHtml = `
-                        <div class="alert alert-danger">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            上傳失敗
-                        </div>
-                        <p>錯誤訊息: ${result.message || '未知錯誤'}</p>
-                    `;
-                }
-                
-                document.getElementById('uploadResultBody').innerHTML = resultHtml;
-                
-                // 顯示結果 Modal
-                const resultModal = new bootstrap.Modal(document.getElementById('uploadResultModal'));
-                resultModal.show();
-            })
-            .catch(error => {
-                console.error('上傳時發生錯誤:', error);
-                
-                // 顯示錯誤
-                document.getElementById('uploadResultBody').innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        上傳時發生錯誤
-                    </div>
-                    <p>錯誤訊息: ${error.message}</p>
-                `;
-                
-                // 顯示結果 Modal
-                const resultModal = new bootstrap.Modal(document.getElementById('uploadResultModal'));
-                resultModal.show();
-            })
-            .finally(() => {
-                // 恢復上傳按鈕
-                const uploadBtn = document.getElementById('uploadBtn');
-                uploadBtn.disabled = false;
-                uploadBtn.innerHTML = '<i class="bi bi-cloud-arrow-up me-2"></i>上傳資料';
-            });
-        }
-        
-        // 顯示 Toast 通知
-        function showToast(message, type = 'success') {
-            const toastEl = document.getElementById('toastNotification');
-            const toastMessage = document.getElementById('toastMessage');
-            
-            // 設置訊息
-            toastMessage.textContent = message;
-            
-            // 設置類型
-            toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
-            
-            // 建立 Toast 實例並顯示
-            const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
-            toast.show();
-        }
-    </script>
+  <!-- 隱藏的表單和iframe用於提交 -->
+  <div style="display:none;">
+      <iframe name="hidden-iframe" id="hidden-iframe"></iframe>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- 自定義 JS -->
+  <script>
+      // 全局變數
+      var workers = [];
+      var uploadedWorkerCount = 0;
+      
+      // 警衛密碼（預設值）
+      const GUARD_PASSWORD = '1234';
+      
+      // Google Apps Script 部署網址
+      const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwq5w64urgNPv5I_3raX16BNc8L9dYkKZv0TcyxOw_Fm6d0vFG7usorT4y5CT_IWJe0/exec';
+      
+      // 頁面載入時執行
+      document.addEventListener('DOMContentLoaded', function() {
+          // 設置當前日期為預設進場日期
+          setDefaultEntryDate();
+          
+          // 註冊表單提交事件
+          document.getElementById('workerForm').addEventListener('submit', function(e) {
+              e.preventDefault();
+              addWorker();
+          });
+          
+          // 從 localStorage 載入資料
+          loadWorkersFromLocalStorage();
+          
+          // 更新工人表格
+          updateWorkerTable();
+          
+          // 設置iframe的load事件
+          document.getElementById('hidden-iframe').onload = function() {
+              handleUploadResponse();
+          };
+          
+          // 監聽密碼輸入框的 Enter 鍵
+          document.getElementById('guardPassword').addEventListener('keypress', function(e) {
+              if (e.key === 'Enter') {
+                  verifyGuardPassword();
+              }
+          });
+      });
+      
+      // 設置預設進場日期
+      function setDefaultEntryDate() {
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = (now.getMonth() + 1).toString().padStart(2, '0');
+          const day = now.getDate().toString().padStart(2, '0');
+          document.getElementById('entryDate').value = `${year}-${month}-${day}`;
+      }
+      
+      // 添加工人
+      function addWorker() {
+          const workerType = document.getElementById('workerType').value;
+          const workerCount = parseInt(document.getElementById('workerCount').value);
+          const workLocation = document.getElementById('workLocation').value;
+          const workContent = document.getElementById('workContent').value;
+          
+          // 獲取日期並轉換格式從 YYYY-MM-DD 到 YYYY/MM/DD
+          const rawEntryDate = document.getElementById('entryDate').value;
+          const entryDate = rawEntryDate.replace(/-/g, '/');
+          
+          // 添加到工人列表
+          workers.push({
+              type: workerType,
+              count: workerCount,
+              location: workLocation,
+              content: workContent,
+              entryDate: entryDate,
+              entryTime: '08:00'
+          });
+          
+          // 更新表格
+          updateWorkerTable();
+          
+          // 保存到 localStorage
+          saveWorkersToLocalStorage();
+          
+          // 重置表單
+          document.getElementById('workerForm').reset();
+          setDefaultEntryDate();
+          
+          // 顯示成功提示
+          showToast('新增成功');
+      }
+      
+      // 更新工人表格
+      function updateWorkerTable() {
+          const tbody = document.querySelector('#workerTable tbody');
+          const emptyState = document.getElementById('emptyState');
+          const workerCountBadge = document.getElementById('workerCountBadge');
+          
+          // 清空表格
+          tbody.innerHTML = '';
+          
+          // 更新計數
+          workerCountBadge.textContent = workers.length;
+          
+          // 如果沒有資料，顯示空狀態
+          if (workers.length === 0) {
+              emptyState.classList.remove('d-none');
+              return;
+          }
+          
+          // 隱藏空狀態
+          emptyState.classList.add('d-none');
+          
+          // 填充表格
+          workers.forEach((worker, index) => {
+              const row = document.createElement('tr');
+              
+              const displayDate = worker.entryDate || '';
+              
+              row.innerHTML = `
+                  <td>${worker.type}</td>
+                  <td>${worker.count}</td>
+                  <td>${worker.location}</td>
+                  <td>${worker.content}</td>
+                  <td>${displayDate}</td>
+                  <td>
+                      <button class="btn btn-sm btn-outline-danger" onclick="removeWorker(${index})">
+                          <i class="bi bi-trash"></i>
+                      </button>
+                  </td>
+              `;
+              
+              tbody.appendChild(row);
+          });
+      }
+      
+      // 移除工人
+      function removeWorker(index) {
+          workers.splice(index, 1);
+          updateWorkerTable();
+          saveWorkersToLocalStorage();
+          showToast('已移除');
+      }
+      
+      // 保存資料到 localStorage
+      function saveWorkersToLocalStorage() {
+          localStorage.setItem('workers', JSON.stringify(workers));
+      }
+      
+      // 從 localStorage 載入資料
+      function loadWorkersFromLocalStorage() {
+          const savedData = localStorage.getItem('workers');
+          if (savedData) {
+              try {
+                  workers = JSON.parse(savedData);
+                  
+                  workers.forEach(worker => {
+                      if (worker.entryDate && worker.entryDate.includes('-')) {
+                          worker.entryDate = worker.entryDate.replace(/-/g, '/');
+                      }
+                  });
+                  
+              } catch (e) {
+                  console.error('解析本地存儲資料時發生錯誤:', e);
+                  workers = [];
+              }
+          }
+      }
+      
+      // 清空所有資料
+      function clearAllData() {
+          workers = [];
+          updateWorkerTable();
+          localStorage.removeItem('workers');
+          
+          const modal = bootstrap.Modal.getInstance(document.getElementById('clearDataModal'));
+          modal.hide();
+          
+          showToast('已清空所有資料');
+      }
+      
+      // 上傳資料到 Google Sheet
+      function uploadData() {
+          // 檢查是否有資料
+          if (workers.length === 0) {
+              showToast('沒有資料可上傳', 'danger');
+              return;
+          }
+          
+          // 禁用上傳按鈕
+          const uploadBtn = document.getElementById('uploadBtn');
+          uploadBtn.disabled = true;
+          uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>上傳中...';
+          
+          // 儲存上傳筆數
+          uploadedWorkerCount = workers.length;
+          
+          // 使用 fetch API
+          fetch(SCRIPT_URL, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: `data=${encodeURIComponent(JSON.stringify(workers))}`
+          })
+          .then(response => response.text())
+          .then(responseText => {
+              console.log('上傳響應:', responseText);
+              
+              let result;
+              try {
+                  result = JSON.parse(responseText);
+              } catch (e) {
+                  result = { result: 'error', message: responseText || '伺服器未返回有效響應' };
+              }
+              
+              if (result.result === 'success') {
+                  // 上傳成功，顯示警衛確認畫面
+                  showGuardVerification();
+              } else {
+                  // 上傳失敗，顯示錯誤訊息
+                  let resultHtml = `
+                      <div class="alert alert-danger">
+                          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                          上傳失敗
+                      </div>
+                      <p>錯誤訊息: ${result.message || '未知錯誤'}</p>
+                  `;
+                  
+                  document.getElementById('uploadResultBody').innerHTML = resultHtml;
+                  const resultModal = new bootstrap.Modal(document.getElementById('uploadResultModal'));
+                  resultModal.show();
+              }
+          })
+          .catch(error => {
+              console.error('上傳時發生錯誤:', error);
+              
+              document.getElementById('uploadResultBody').innerHTML = `
+                  <div class="alert alert-danger">
+                      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                      上傳時發生錯誤
+                  </div>
+                  <p>錯誤訊息: ${error.message}</p>
+              `;
+              
+              const resultModal = new bootstrap.Modal(document.getElementById('uploadResultModal'));
+              resultModal.show();
+          })
+          .finally(() => {
+              // 恢復上傳按鈕
+              const uploadBtn = document.getElementById('uploadBtn');
+              uploadBtn.disabled = false;
+              uploadBtn.innerHTML = '<i class="bi bi-cloud-arrow-up me-2"></i>上傳資料';
+          });
+      }
+      
+      // 顯示警衛確認畫面
+      function showGuardVerification() {
+          // 設置上傳時間
+          const now = new Date();
+          const timeString = now.toLocaleString('zh-TW', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false
+          });
+          document.getElementById('uploadTime').textContent = timeString;
+          
+          // 設置上傳筆數
+          document.getElementById('uploadCount').textContent = `${uploadedWorkerCount} 筆`;
+          
+          // 清空密碼輸入框
+          document.getElementById('guardPassword').value = '';
+          document.getElementById('passwordError').style.display = 'none';
+          
+          // 顯示 Modal
+          const guardModal = new bootstrap.Modal(document.getElementById('guardVerificationModal'));
+          guardModal.show();
+      }
+      
+      // 驗證警衛密碼
+      function verifyGuardPassword() {
+          const inputPassword = document.getElementById('guardPassword').value;
+          const passwordError = document.getElementById('passwordError');
+          
+          if (inputPassword === GUARD_PASSWORD) {
+              // 密碼正確
+              passwordError.style.display = 'none';
+              
+              // 關閉 Modal
+              const guardModal = bootstrap.Modal.getInstance(document.getElementById('guardVerificationModal'));
+              guardModal.hide();
+              
+              // 清空本地資料
+              workers = [];
+              updateWorkerTable();
+              localStorage.removeItem('workers');
+              
+              // 顯示成功訊息
+              showToast('警衛確認完成，資料已清空', 'success');
+          } else {
+              // 密碼錯誤
+              passwordError.style.display = 'block';
+              document.getElementById('guardPassword').value = '';
+              document.getElementById('guardPassword').focus();
+              
+              // 震動效果
+              const passwordInput = document.getElementById('guardPassword');
+              passwordInput.classList.add('is-invalid');
+              setTimeout(() => {
+                  passwordInput.classList.remove('is-invalid');
+              }, 500);
+          }
+      }
+      
+      // 顯示 Toast 通知
+      function showToast(message, type = 'success') {
+          const toastEl = document.getElementById('toastNotification');
+          const toastMessage = document.getElementById('toastMessage');
+          
+          toastMessage.textContent = message;
+          toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+          
+          const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+          toast.show();
+      }
+  </script>
 </body>
 </html>
-
-
-
