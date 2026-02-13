@@ -337,7 +337,7 @@
                   <div class="guard-verification-screen">
                       <i class="bi bi-shield-check guard-icon"></i>
                       <h3>
-                          ✅ 已完成回報
+                          已完成回報
                           <span class="vietnamese d-block">Đã hoàn thành báo cáo</span>
                       </h3>
                       
@@ -362,7 +362,7 @@
                       <div class="alert alert-light mt-4 mb-3">
                           <i class="bi bi-info-circle me-2"></i>
                           <strong>
-                              請將此畫面供警衛檢視(本系統春節期間使用目前預設密碼1234)
+                              請將此畫面供警衛檢視(請跟警衛索取密碼)Vui lòng hỏi nhân viên bảo vệ mật khẩu.
                               <span class="vietnamese d-block">Vui lòng cho bảo vệ xem màn hình này (Mật khẩu mặc định trong dịp Tết Nguyên Đán: 1234)</span>
                           </strong>
                       </div>
@@ -370,13 +370,13 @@
                       <div class="password-input-group">
                           <label class="form-label text-white fs-5 mb-3">
                               <i class="bi bi-key-fill me-2"></i>
-                              請輸入警衛密碼(密碼1234)
+                              請輸入警衛密碼(Vui lòng hỏi nhân viên bảo vệ mật khẩu.)
                               <span class="vietnamese d-block">Vui lòng nhập mật khẩu bảo vệ (Mật khẩu: 1234)</span>
                           </label>
                           <input type="password" 
                                  class="form-control form-control-lg" 
                                  id="guardPassword" 
-                                 placeholder="••••"
+                                 placeholder="(請跟警衛索取密碼)Vui lòng hỏi nhân viên bảo vệ mật khẩu"
                                  maxlength="4">
                           <div class="invalid-feedback d-block" id="passwordError" style="display:none !important;">
                               密碼錯誤，請重新輸入
@@ -405,13 +405,13 @@
                       <i class="bi bi-check-circle-fill success-icon"></i>
                       
                       <h2>
-                          ✅ 已完成回報
+                          已完成回報
                           <span class="vietnamese d-block">Đã hoàn thành báo cáo</span>
                       </h2>
                       
                       <div class="entry-permission-badge">
                           <i class="bi bi-door-open me-2"></i>
-                          請將此畫面提供給警衛查看
+                          請將此畫面提供給警衛查看(Vui lòng đưa hình ảnh này cho nhân viên bảo vệ xem)
                           <span class="vietnamese d-block">Vui lòng cho bảo vệ xem màn hình này</span>
                       </div>
                       
@@ -445,7 +445,7 @@
                       <div class="alert alert-light mt-4 mb-3 mx-auto" style="max-width: 500px;">
                           <i class="bi bi-info-circle-fill me-2"></i>
                           <strong>
-                              警衛確認後，人員即可進場
+                              警衛確認後，人員即可進場(Sau khi nhân viên bảo vệ xác nhận quyền vào, nhân viên mới được phép vào khu vực)
                               <span class="vietnamese d-block">Sau khi bảo vệ xác nhận, nhân viên có thể vào</span>
                           </strong>
                       </div>
@@ -513,7 +513,7 @@
       var uploadDateTime = null;
       
       // 警衛密碼（預設值）
-      const GUARD_PASSWORD = '1234';
+      const GUARD_PASSWORD = '5168';
       
       // Google Apps Script 部署網址
       const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwq5w64urgNPv5I_3raX16BNc8L9dYkKZv0TcyxOw_Fm6d0vFG7usorT4y5CT_IWJe0/exec';
@@ -904,4 +904,5 @@
   </script>
 </body>
 </html>
+
 
